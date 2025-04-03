@@ -10,7 +10,7 @@ export const login = asyncError(async  (req,res,next) => {
 
 
     if (!user) {
-      return next(new Error("Incorrect Email or Password", 400));
+      return next(new ErrorHandler("Incorrect Email or Password", 400));
    }
 
     if (!password) return next(new ErrorHandler("Please Enter The Password", 400));
@@ -19,7 +19,7 @@ export const login = asyncError(async  (req,res,next) => {
     const isMatched = await user.comparePassword(password);
 
     if (!isMatched) {
-      return next(new Error("Incorrect Email or Password", 400));
+      return next(new ErrorHandler("Incorrect Email or Password", 400));
     }
 
     sendToken(user,res,`Welcome back, ${user.name}`, 200 );
@@ -208,5 +208,3 @@ export const resetPassword = asyncError(async (req,res,next)=>{
     message:"Password Change Successfully, You can login now", 
   });
 });
-
-

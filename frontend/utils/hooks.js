@@ -89,17 +89,35 @@ export const useMessageAndErrorOther = (
 
 export const useSetCategories = (setCategories, isFocused) => {
   useEffect(() => {
-    axios
-      .get(`${server}/product/categories`)
-      .then((res) => {
-        setCategories(res.data.categories);
-      })
-      .catch((e) => {
+    const fetchCategories = async () => {
+      try {
+        console.log("Fetching categories from:", `${server}/product/categories`);
+        const res = await axios.get(`${server}/product/categories`);
+        console.log("Categories response:", res.data);
+        
+        if (res.data && res.data.categories) {
+          setCategories(res.data.categories);
+        } else {
+          console.error("Invalid categories data format:", res.data);
+          Toast.show({
+            type: "error",
+            text1: "Failed to fetch categories: Invalid data format",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
         Toast.show({
           type: "error",
-          text1: e.response.data.message,
+          text1: error.response?.data?.message || "Failed to fetch categories",
         });
-      });
+        // Set categories to empty array on error
+        setCategories([]);
+      }
+    };
+
+    if (isFocused) {
+      fetchCategories();
+    }
   }, [isFocused]);
 };
 

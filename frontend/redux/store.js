@@ -15,5 +15,6 @@ export const store = configureStore({
   },
 });
 
-// Use your computer's IP address with the correct port
-export const server = "http://192.168.176.228:5001/api/v1";
+// IMPORTANT: Replace with your computer's IP address and correct port
+// Based on server/data/config.env, the port should be 5000
+export const server = "http://192.168.1.7:5000/api/v1";

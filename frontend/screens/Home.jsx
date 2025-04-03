@@ -26,6 +26,7 @@ import SearchModal from "../components/SearchModal";
 
 import { getAllProducts } from "../redux/actions/productAction";
 import { useSetCategories } from "../utils/hooks";
+import { logout } from "../redux/actions/userAction";
 
 const Home = () => {
   const [category, setCategory] = useState("");
@@ -43,6 +44,15 @@ const Home = () => {
 
   const categoryButtonHandler = (id) => {
     setCategory(id);
+  };
+
+  const logoutHandler = () => {
+    dispatch(logout());
+    Toast.show({
+      type: "success",
+      text1: "Logged out successfully",
+    });
+    navigate.navigate("login");
   };
 
   const addToCartHandler = (id, name, price, image, stock) => {
@@ -127,10 +137,32 @@ const Home = () => {
               showSearchButton={true}
               onSearchButtonPress={() => setActiveSearch((prev) => !prev)}
             />
+            
+            {/* Logout Button */}
+            {user && (
+              <TouchableOpacity
+                style={{
+                  position: "absolute",
+                  right: 80,
+                  top: 20,
+                  zIndex: 10,
+                }}
+                onPress={logoutHandler}
+              >
+                <Avatar.Icon
+                  style={{
+                    backgroundColor: colors.color4,
+                  }}
+                  icon={"logout"}
+                  color={colors.color3}
+                  size={40}
+                />
+              </TouchableOpacity>
+            )}
 
             {/* Heading Row */}
             <View style={styles.headingContainer}>
-              <Heading text1="Find Your" text2="Needs" />
+              <Heading text1="Explore your" text2="best options" />
             </View>
 
             {/* Carousel */}
@@ -148,7 +180,7 @@ const Home = () => {
 
             {/* Subheading Row */}
             <View style={styles.subheadingContainer}>
-              <Heading text1="Our" text2="Collection" />
+              <Heading text1="Digital Camera" text2="Collections" />
             </View>
 
             {/* Products */}
@@ -173,7 +205,7 @@ const Home = () => {
                   contentContainerStyle={styles.scrollViewContent}
                 />
               ) : (
-                <Text>No available products yet for the category</Text>
+                <Text>No products available in this category yet.</Text>
               )}
             </View>
           </View>

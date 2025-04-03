@@ -1,5 +1,6 @@
 import axios from "axios";
 import { server } from "../store";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const updatePassword =
   (oldPassword, newPassword) => async (dispatch) => {
@@ -176,11 +177,19 @@ export const addCategory = (formData) => async (dispatch) => {
       type: "addCategoryRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
     const { data } = await axios.post(`${server}/product/category`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
+        "Authorization": `Bearer ${token}`
       },
-      withCredentials: true,
+      withCredentials: false
     });
 
     dispatch({
@@ -188,9 +197,10 @@ export const addCategory = (formData) => async (dispatch) => {
       payload: data.message,
     });
   } catch (error) {
+    console.error("Add category error:", error);
     dispatch({
       type: "addCategoryFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to add category",
     });
   }
 };
@@ -201,11 +211,20 @@ export const deleteCategory = (id) => async (dispatch) => {
       type: "deleteCategoryRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
     const { data } = await axios.delete(
       `${server}/product/category/${id}`,
-
       {
-        withCredentials: true,
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        withCredentials: false,
       }
     );
     dispatch({
@@ -213,9 +232,10 @@ export const deleteCategory = (id) => async (dispatch) => {
       payload: data.message,
     });
   } catch (error) {
+    console.error("Delete category error:", error);
     dispatch({
       type: "deleteCategoryFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to delete category",
     });
   }
 };
