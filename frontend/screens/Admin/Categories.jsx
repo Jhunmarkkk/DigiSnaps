@@ -15,32 +15,73 @@ import {
 import Header from "../../components/Header";
 import { Avatar, Button, TextInput } from "react-native-paper";
 import { useIsFocused } from "@react-navigation/native";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addCategory, deleteCategory } from "../../redux/actions/otherAction";
 import { useMessageAndErrorOther, useSetCategories } from "../../utils/hooks";
 import mime from "mime";
+import Toast from "react-native-toast-message";
 
 const Categories = ({ navigation, route, navigate }) => {
   const [category, setCategory] = useState("");
   const [image, setImage] = useState("");
   const [categories, setCategories] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isFocused = useIsFocused();
   const dispatch = useDispatch();
+  const { loading, error, message } = useSelector((state) => state.other);
 
-  useSetCategories(setCategories, isFocused);
+  // Fetch categories on component load and when focus changes
+  const fetchCategories = async () => {
+    setRefreshing(true);
+    await useSetCategories(setCategories, true);
+    setRefreshing(false);
+  };
 
-  const loading = useMessageAndErrorOther(
-    dispatch,
-    navigation,
-    "admindashboard"
-  );
+  useEffect(() => {
+    fetchCategories();
+  }, [isFocused]);
+
+  // Handle success/error messages
+  useEffect(() => {
+    if (error) {
+      Toast.show({
+        type: "error",
+        text1: error,
+      });
+      dispatch({ type: "clearError" });
+    }
+    if (message) {
+      Toast.show({
+        type: "success",
+        text1: message,
+      });
+      dispatch({ type: "clearMessage" });
+      setCategory("");
+      setImage("");
+      fetchCategories(); // Refresh the categories after adding
+    }
+  }, [error, message, dispatch]);
 
   const deleteHandler = (id) => {
     dispatch(deleteCategory(id));
   };
 
   const submitHandler = () => {
+    if (!category) {
+      return Toast.show({
+        type: "error",
+        text1: "Please enter a category name",
+      });
+    }
+
+    if (!image) {
+      return Toast.show({
+        type: "error",
+        text1: "Please select an image",
+      });
+    }
+
     const myForm = new FormData();
     myForm.append("category", category);
     myForm.append("file", {
@@ -77,15 +118,19 @@ const Categories = ({ navigation, route, navigate }) => {
             minHeight: 400,
           }}
         >
-          {categories.map((i) => (
-            <CategoryCard
-              name={i.category}
-              id={i._id}
-              key={i._id}
-              deleteHandler={deleteHandler}
-              navigation={navigation}
-            />
-          ))}
+          {categories.length > 0 ? (
+            categories.map((i) => (
+              <CategoryCard
+                name={i.category}
+                id={i._id}
+                key={i._id}
+                deleteHandler={deleteHandler}
+                navigation={navigation}
+              />
+            ))
+          ) : (
+            <Text style={{textAlign: 'center', marginTop: 20}}>No categories found</Text>
+          )}
         </View>
       </ScrollView>
       <View style={styles.container}>
@@ -138,7 +183,7 @@ const Categories = ({ navigation, route, navigate }) => {
             padding: 6,
           }}
           loading={loading}
-          disabled={!category}
+          disabled={loading}
           onPress={submitHandler}
         >
           Add

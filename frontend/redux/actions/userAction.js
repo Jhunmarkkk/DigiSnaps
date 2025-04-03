@@ -69,6 +69,8 @@ export const login = (email, password) => async (dispatch) => {
         if (data.token) {
             await AsyncStorage.setItem('token', data.token);
             console.log('Token stored successfully');
+        } else {
+            console.warn('No token received in login response');
         }
 
         dispatch({
@@ -80,6 +82,13 @@ export const login = (email, password) => async (dispatch) => {
         dispatch(loadUser());
     } catch (error) {
         console.error('Login error:', error);
+        
+        // More detailed error logging
+        if (error.response) {
+            console.error('Error status:', error.response.status);
+            console.error('Error data:', error.response.data);
+        }
+        
         dispatch({
             type: "loginFail",
             payload: error.response?.data?.message || "Login failed. Please try again.",
@@ -105,28 +114,43 @@ export const loadUser = () => async (dispatch) => {
 
         console.log('Loading user with token:', token);
 
-        const { data } = await axios.get(`${server}/user/me`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            withCredentials: false
-        });
+        try {
+            const { data } = await axios.get(`${server}/user/me`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                withCredentials: false
+            });
 
-        console.log('User data loaded:', data);
-  
-        dispatch({
-            type: "loadUserSuccess",
-            payload: data.user,
-        });
-    } catch (error) {
-        console.error('Load user error:', error);
-        // Clear token if it's invalid
-        if (error.response?.status === 401) {
-            await AsyncStorage.removeItem('token');
+            console.log('User data loaded:', data);
+            
+            if (data.success && data.user) {
+                dispatch({
+                    type: "loadUserSuccess",
+                    payload: data.user,
+                });
+            } else {
+                throw new Error("Invalid user data received");
+            }
+        } catch (apiError) {
+            console.error('API error loading user:', apiError);
+            
+            // Clear token if it's invalid
+            if (apiError.response?.status === 401) {
+                await AsyncStorage.removeItem('token');
+                console.log('Token removed due to authentication failure');
+            }
+            
+            dispatch({
+                type: "loadUserFail",
+                payload: apiError.response?.status === 401 ? null : (apiError.response?.data?.message || "Failed to load user profile"),
+            });
         }
+    } catch (error) {
+        console.error('Fatal error in loadUser:', error);
         dispatch({
             type: "loadUserFail",
-            payload: error.response?.status === 401 ? null : (error.response?.data?.message || "Failed to load user"),
+            payload: "An unexpected error occurred",
         });
     }
 };
