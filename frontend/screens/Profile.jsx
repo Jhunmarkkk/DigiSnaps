@@ -1,4 +1,3 @@
-
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -29,14 +28,14 @@ const Profile = ({ navigation, route }) => {
 
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
-  const loading = useMessageAndErrorUser(navigation, dispatch, "login");
+  const loading = useMessageAndErrorUser(navigation, dispatch, "home");
 
   const logoutHandler = () => {
     dispatch(logout());
-  };
-
-  const openDrawer = () => {
-    navigation.openDrawer();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "home" }],
+    });
   };
 
   const navigateHandler = (text) => {
@@ -56,15 +55,13 @@ const Profile = ({ navigation, route }) => {
       case "Sign Out":
         logoutHandler();
         break;
-
       default:
-      case "Orders":
         navigation.navigate("orders");
         break;
     }
   };
 
-  const loadingPic = useMessageAndErrorOther(dispatch, null, null, loadUser);
+  const loadingPic = useMessageAndErrorOther(dispatch, navigation, null, loadUser);
 
   useEffect(() => {
     if (route.params?.image) {
@@ -156,6 +153,24 @@ const Profile = ({ navigation, route }) => {
                     reverse={true}
                   />
                 )}
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  margin: 10,
+                  justifyContent: "space-evenly",
+                }}
+              >
+                <ButtonBox
+                  handler={navigateHandler}
+                  text={"Orders"}
+                  icon={"format-list-bulleted-square"}
+                />
+                <ButtonBox
+                  handler={navigateHandler}
+                  text={"Sign Out"}
+                  icon={"exit-to-app"}
+                />
               </View>
             </View>
           </>
