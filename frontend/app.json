@@ -17,18 +17,36 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "DigiSnaps needs access to your camera to take product photos.",
+        "NSPhotoLibraryUsageDescription": "DigiSnaps needs access to your photos to upload product images."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.digi.snaps"
+      "package": "com.digi.snaps",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "DigiSnaps needs access to your photos to upload product images.",
+          "cameraPermission": "DigiSnaps needs access to your camera to take product photos."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "b492891e-2c35-4d0a-bc6d-1f5ecda602ab"

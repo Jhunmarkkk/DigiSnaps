@@ -15,6 +15,7 @@ import { useDispatch } from "react-redux";
 import { useIsFocused } from "@react-navigation/native";
 import mime from "mime";
 import { createProduct } from "../../redux/actions/otherAction";
+import { getAllProducts } from "../../redux/actions/productAction";
 
 const NewProduct = ({ navigation, route }) => {
   const isFocused = useIsFocused();
@@ -55,7 +56,8 @@ const NewProduct = ({ navigation, route }) => {
   const loading = useMessageAndErrorOther(
     dispatch,
     navigation,
-    "admindashboard"
+    "admindashboard",
+    getAllProducts
   );
 
   useEffect(() => {

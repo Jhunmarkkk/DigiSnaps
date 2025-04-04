@@ -176,23 +176,47 @@ export const addCategory = (formData) => async (dispatch) => {
       throw new Error("Please login first");
     }
 
+    console.log("Creating category at:", `${server}/product/category`);
+    console.log("Token available:", !!token);
+    
+    // Check what's in the formData for debugging
+    for (let pair of formData._parts) {
+      console.log("FormData contains:", pair[0], pair[1]);
+    }
+
     const { data } = await axios.post(`${server}/product/category`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         "Authorization": `Bearer ${token}`
       },
-      withCredentials: false
+      withCredentials: false,
+      timeout: 15000 // Increase timeout to 15 seconds
     });
+
+    console.log("Category created successfully:", data.message);
 
     dispatch({
       type: "addCategorySuccess",
       payload: data.message,
     });
   } catch (error) {
-    console.error("Add category error:", error);
+    console.error("Add category error details:", error);
+    
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      console.error("Response data:", error.response.data);
+      console.error("Response status:", error.response.status);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error("No response received from server");
+    } else {
+      // Something happened in setting up the request
+      console.error("Error message:", error.message);
+    }
+    
     dispatch({
       type: "addCategoryFail",
-      payload: error.response?.data?.message || "Failed to add category",
+      payload: error.response?.data?.message || `Failed to add category: ${error.message}`,
     });
   }
 };
@@ -321,11 +345,19 @@ export const createProduct = (formData) => async (dispatch) => {
       type: "addProductRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
     const { data } = await axios.post(`${server}/product/new`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
+        "Authorization": `Bearer ${token}`
       },
-      withCredentials: true,
+      withCredentials: false
     });
 
     dispatch({
@@ -335,16 +367,25 @@ export const createProduct = (formData) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "addProductFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to create product",
     });
   }
 };
+
 export const updateProduct =
   (id, name, description, price, stock, category) => async (dispatch) => {
     try {
       dispatch({
         type: "updateProductRequest",
       });
+
+      // Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error("Authentication token not found. Please login again.");
+      }
+
       const { data } = await axios.put(
         `${server}/product/single/${id}`,
         {
@@ -357,8 +398,9 @@ export const updateProduct =
         {
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           },
-          withCredentials: true,
+          withCredentials: false
         }
       );
 
@@ -369,7 +411,7 @@ export const updateProduct =
     } catch (error) {
       dispatch({
         type: "updateProductFail",
-        payload: error.response.data.message,
+        payload: error.response?.data?.message || "Failed to update product",
       });
     }
   };
@@ -380,14 +422,22 @@ export const updateProductImage = (productId, formData) => async (dispatch) => {
       type: "updateProductImageRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
     const { data } = await axios.post(
       `${server}/product/images/${productId}`,
       formData,
       {
         headers: {
           "Content-Type": "multipart/form-data",
+          "Authorization": `Bearer ${token}`
         },
-        withCredentials: true,
+        withCredentials: false
       }
     );
 
@@ -398,7 +448,7 @@ export const updateProductImage = (productId, formData) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "updateProductImageFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to update product image",
     });
   }
 };
@@ -409,10 +459,20 @@ export const deleteProductImage = (productId, imageId) => async (dispatch) => {
       type: "deleteProductImageRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
     const { data } = await axios.delete(
       `${server}/product/images/${productId}?id=${imageId}`,
       {
-        withCredentials: true,
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        withCredentials: false
       }
     );
 
@@ -423,7 +483,7 @@ export const deleteProductImage = (productId, imageId) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "deleteProductImageFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to delete product image",
     });
   }
 };
@@ -434,10 +494,20 @@ export const deleteProduct = (productId) => async (dispatch) => {
       type: "deleteProductRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
     const { data } = await axios.delete(
       `${server}/product/single/${productId}`,
       {
-        withCredentials: true,
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        withCredentials: false
       }
     );
 
@@ -448,7 +518,7 @@ export const deleteProduct = (productId) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "deleteProductFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to delete product",
     });
   }
 };

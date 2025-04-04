@@ -122,15 +122,33 @@ const Categories = ({ navigation, route, navigate }) => {
       });
     }
 
-    const myForm = new FormData();
-    myForm.append("category", category);
-    myForm.append("file", {
-      uri: image,
-      type: mime.getType(image),
-      name: image.split("/").pop(),
-    });
-
-    dispatch(addCategory(myForm));
+    console.log("Creating new category:", category);
+    console.log("Image URI:", image);
+    
+    try {
+      const myForm = new FormData();
+      myForm.append("category", category);
+      
+      const imageDetails = {
+        uri: image,
+        type: mime.getType(image),
+        name: image.split("/").pop()
+      };
+      console.log("Image details:", imageDetails);
+      
+      myForm.append("file", imageDetails);
+      
+      // Check if form data was created properly
+      console.log("Form data created with parts length:", myForm._parts?.length || "unknown");
+      
+      dispatch(addCategory(myForm));
+    } catch (error) {
+      console.error("Error creating formData:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error preparing category data: " + error.message,
+      });
+    }
   };
 
   useEffect(() => {

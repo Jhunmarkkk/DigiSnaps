@@ -27,6 +27,7 @@ import SearchModal from "../components/SearchModal";
 import { getAllProducts } from "../redux/actions/productAction";
 import { useSetCategories } from "../utils/hooks";
 import { logout } from "../redux/actions/userAction";
+import { store } from "../redux/store";
 
 const Home = () => {
   const [category, setCategory] = useState("");
@@ -91,8 +92,23 @@ const Home = () => {
   }, [categories]);
 
   useEffect(() => {
+    const fetchProducts = async () => {
+      // First try with the category filter
+      await dispatch(getAllProducts(searchQuery, category));
+      
+      // Check if we got products
+      const currentState = store.getState();
+      const currentProducts = currentState.product.products;
+      
+      // If no products and we have a category filter, try without category filter
+      if (currentProducts.length === 0 && category) {
+        console.log("No products found with category filter, trying without filter");
+        dispatch(getAllProducts(searchQuery, ""));
+      }
+    };
+
     const timeOutId = setTimeout(() => {
-      dispatch(getAllProducts(searchQuery, category));
+      fetchProducts();
     }, 500);
 
     return () => {
@@ -183,6 +199,38 @@ const Home = () => {
               <Heading text1="Digital Camera" text2="Collections" />
             </View>
 
+            {/* Category Buttons */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryContainer}
+              style={{ marginVertical: 10 }}
+            >
+              {categories.map((item) => (
+                <TouchableOpacity
+                  key={item._id}
+                  onPress={() => categoryButtonHandler(item._id)}
+                  style={{
+                    backgroundColor:
+                      category === item._id ? colors.color1 : colors.color5,
+                    borderRadius: 20,
+                    padding: 10,
+                    marginHorizontal: 5,
+                    marginVertical: 5,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: category === item._id ? colors.color2 : colors.color3,
+                    }}
+                  >
+                    {item.category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             {/* Products */}
             <View style={styles.productContainer}>
               {products.length > 0 ? (
@@ -243,7 +291,9 @@ const styles = StyleSheet.create({
   },
   categoryContainer: {
     flexDirection: "row",
-    height: 80,
+    alignItems: "center",
+    paddingVertical: 5,
+    paddingHorizontal: 5,
   },
   productContainer: {
     flex: 1,

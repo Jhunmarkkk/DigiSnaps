@@ -81,6 +81,11 @@ export const useMessageAndErrorOther = (
       });
 
       if (navigateTo && isAuthenticated) {
+        // For product creation, refresh products after navigating
+        if (navigateTo === "admindashboard") {
+          dispatch({ type: "clearError" });
+          dispatch({ type: "clearMessage" });
+        }
         navigation?.navigate(navigateTo);
       }
 
