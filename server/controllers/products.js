@@ -6,21 +6,42 @@ import { getDataUri } from "../utils/features.js";
 import { Category } from "../models/category.js";
 
 export const getAllProducts = asyncError(async (req, res, next) => {
-  const { keyword, category } = req.query;
-
-  const products = await Product.find({
-    name: {
-      $regex: keyword ? keyword : "",
-      $options: "i",
-    },
-    category: category ? category : undefined,
-  });
-
-  res.status(200).json({
-    success: true,
-    products,
-  });
+  try {
+    const { keyword, category } = req.query;
+    
+    console.log(`Product search request - keyword: "${keyword}", category: "${category}"`);
+    
+    // Build filter criteria
+    const filter = {};
+    
+    if (keyword) {
+      filter.name = {
+        $regex: keyword,
+        $options: "i",
+      };
+    }
+    
+    if (category && category !== "undefined" && category !== "null") {
+      filter.category = category;
+    }
+    
+    console.log("Filter criteria:", filter);
+    
+    // Fetch the products with category information
+    const products = await Product.find(filter).populate("category");
+    
+    console.log(`Found ${products.length} products matching the criteria`);
+    
+    res.status(200).json({
+      success: true,
+      products,
+    });
+  } catch (error) {
+    console.error("Error in getAllProducts:", error);
+    next(error);
+  }
 });
+
 export const getAdminProducts = asyncError(async (req, res, next) => {
   const products = await Product.find({}).populate("category");
 
@@ -44,6 +65,7 @@ export const getProductDetails = asyncError(async (req, res, next) => {
     product,
   });
 });
+
 export const createProduct = asyncError(async (req, res, next) => {
   const { name, description, category, price, stock } = req.body;
 

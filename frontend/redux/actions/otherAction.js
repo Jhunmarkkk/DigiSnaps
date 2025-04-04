@@ -19,7 +19,6 @@ export const updatePassword =
           headers: {
             "Content-Type": "application/json",
           },
-          withCredentials: true,
         }
       );
 
@@ -30,7 +29,7 @@ export const updatePassword =
     } catch (error) {
       dispatch({
         type: "updatePasswordFail",
-        payload: error.response.data.message,
+        payload: error.response?.data?.message || "Failed to update password",
       });
     }
   };
@@ -56,7 +55,6 @@ export const updateProfile =
           headers: {
             "Content-Type": "application/json",
           },
-          withCredentials: true,
         }
       );
 
@@ -67,7 +65,7 @@ export const updateProfile =
     } catch (error) {
       dispatch({
         type: "updateProfileFail",
-        payload: error.response.data.message,
+        payload: error.response?.data?.message || "Failed to update profile",
       });
     }
   };
@@ -82,7 +80,6 @@ export const updatePic = (formData) => async (dispatch) => {
       headers: {
         "Content-Type": "multipart/form-data",
       },
-      withCredentials: true,
     });
 
     dispatch({
@@ -92,7 +89,7 @@ export const updatePic = (formData) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "updatePicFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to update profile picture",
     });
   }
 };
@@ -130,7 +127,6 @@ export const placeOrder =
           headers: {
             "Content-Type": "application/json",
           },
-          withCredentials: true,
         }
       );
       dispatch({
@@ -140,7 +136,7 @@ export const placeOrder =
     } catch (error) {
       dispatch({
         type: "placeOrderFail",
-        payload: error.response.data.message,
+        payload: error.response?.data?.message || "Failed to place order",
       });
     }
   };
@@ -153,11 +149,7 @@ export const processOrder = (id) => async (dispatch) => {
 
     const { data } = await axios.put(
       `${server}/order/single/${id}`,
-
-      {},
-      {
-        withCredentials: true,
-      }
+      {}
     );
     dispatch({
       type: "processOrderSuccess",
@@ -166,7 +158,7 @@ export const processOrder = (id) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "processOrderFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to process order",
     });
   }
 };
@@ -475,7 +467,6 @@ export const forgetPassword = (email) => async (dispatch) => {
         headers: {
           "Content-Type": "application/json",
         },
-        withCredentials: true,
       }
     );
 
@@ -486,7 +477,7 @@ export const forgetPassword = (email) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "forgetPasswordFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to send password reset email",
     });
   }
 };
@@ -506,7 +497,6 @@ export const resetPassword = (otp, password) => async (dispatch) => {
         headers: {
           "Content-Type": "application/json",
         },
-        withCredentials: true,
       }
     );
 
@@ -517,7 +507,7 @@ export const resetPassword = (otp, password) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "resetPasswordFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to reset password",
     });
   }
 };

@@ -13,12 +13,12 @@ import { useDispatch } from "react-redux";
 import { updatePassword } from "../redux/actions/otherAction";
 import { useMessageAndErrorOther } from "../utils/hooks";
 
-const ChangePassword = () => {
+const ChangePassword = ({ navigation }) => {
   const [oldpassword, setOldPassword] = useState("");
   const [newpassword, setNewPassword] = useState("");
 
   const dispatch = useDispatch();
-  const loading = useMessageAndErrorOther(dispatch);
+  const loading = useMessageAndErrorOther(dispatch, navigation, "profile");
 
   const submitHandler = () => {
     dispatch(updatePassword(oldpassword, newpassword));

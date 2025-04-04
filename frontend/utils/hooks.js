@@ -58,6 +58,7 @@ export const useMessageAndErrorOther = (
   func
 ) => {
   const { loading, message, error } = useSelector((state) => state.other);
+  const { isAuthenticated } = useSelector((state) => state.user);
 
   useEffect(() => {
     if (error) {
@@ -79,11 +80,13 @@ export const useMessageAndErrorOther = (
         type: "clearMessage",
       });
 
-      navigateTo && navigation.navigate(navigateTo);
+      if (navigateTo && isAuthenticated) {
+        navigation?.navigate(navigateTo);
+      }
 
-      func && dispatch(func());
+      if (func) dispatch(func());
     }
-  }, [error, message, dispatch]);
+  }, [error, message, dispatch, isAuthenticated, navigateTo]);
 
   return loading;
 };

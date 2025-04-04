@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, Image } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { colors } from "../styles/styles";
-import { Button } from "react-native-paper";
+import { Button, ActivityIndicator } from "react-native-paper";
 
 const ProductCard = ({
   stock,
@@ -13,6 +13,9 @@ const ProductCard = ({
   i,
   navigate,
 }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
   return (
     <TouchableOpacity
       activeOpacity={1}
@@ -31,6 +34,34 @@ const ProductCard = ({
           backgroundColor: colors.color2,
         }}
       >
+        {isLoading && (
+          <View style={{
+            position: 'absolute',
+            left: 25,
+            top: 0,
+            width: 100, 
+            height: '100%',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <ActivityIndicator size="large" color={colors.color1} />
+          </View>
+        )}
+        
+        {hasError && (
+          <View style={{
+            position: 'absolute',
+            left: 25,
+            top: 0,
+            width: 100, 
+            height: '100%',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <Text style={{color: colors.color3}}>Image not available</Text>
+          </View>
+        )}
+        
         <Image
           source={{
             uri: image,
@@ -42,6 +73,15 @@ const ProductCard = ({
             position: "absolute",
             left: 25,
             top: 0,
+            opacity: hasError ? 0 : 1
+          }}
+          progressiveRenderingEnabled={true}
+          onLoadStart={() => setIsLoading(true)}
+          onLoadEnd={() => setIsLoading(false)}
+          onError={(e) => {
+            console.log("Image load error:", e.nativeEvent.error, image);
+            setIsLoading(false);
+            setHasError(true);
           }}
         />
 
