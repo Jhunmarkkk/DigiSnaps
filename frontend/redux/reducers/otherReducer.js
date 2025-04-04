@@ -157,11 +157,25 @@ export const otherReducer = createReducer({}, (builder) => {
     .addCase("resetPasswordFail", (state, action) => {
       state.loading = false;
       state.error = action.payload;
-    });
+    })
 
-  builder.addCase("clearError", (state) => {
-    state.error = null;
-  });
+    .addCase("updateCategoryRequest", (state) => {
+        state.loading = true;
+    })
+
+    .addCase("updateCategorySuccess", (state, action) => {
+        state.loading = false;
+        state.message = action.payload;
+    })
+
+    .addCase("updateCategoryFail", (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+    })
+
+    .addCase("clearError", (state) => {
+      state.error = null;
+    });
   builder.addCase("clearMessage", (state) => {
     state.message = null;
   });

@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { loadUser } from "../redux/actions/userAction";
 import { server } from "../redux/store";
 import { getAdminProducts } from "../redux/actions/productAction";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const useMessageAndErrorUser = (
   navigation,
@@ -124,22 +125,34 @@ export const useSetCategories = (setCategories, isFocused) => {
 export const useGetOrders = (isFocused, isAdmin = false) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  
   useEffect(() => {
-    setLoading(true);
-    axios
-      .get(`${server}/order/${isAdmin ? "admin" : "my"}`)
-      .then((res) => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const token = await AsyncStorage.getItem('token');
+        
+        const res = await axios.get(`${server}/order/${isAdmin ? "admin" : "my"}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
         setOrders(res.data.orders);
         setLoading(false);
-      })
-      .catch((e) => {
+      } catch (e) {
         Toast.show({
           type: "error",
-          text1: e.response.data.message,
+          text1: e.response?.data?.message || "Failed to fetch orders",
         });
         setLoading(false);
-      });
-  }, [isFocused]);
+      }
+    };
+    
+    if (isFocused) {
+      fetchOrders();
+    }
+  }, [isFocused, isAdmin]);
 
   return {
     loading,
@@ -178,7 +191,12 @@ export const useGetSalesData = (setSalesData) => {
   useEffect(() => {
     const fetchSalesData = async () => {
       try {
-        const response = await axios.get(`${server}/order/dailySales`);
+        const token = await AsyncStorage.getItem('token');
+        const response = await axios.get(`${server}/order/dailySales`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         setSalesData(response.data.salesPerDay);
       } catch (error) {
         console.error('Error fetching sales data:', error);
@@ -194,7 +212,12 @@ export const useGetGeographicSalesData = (setGeographicSalesData) => {
   useEffect(() => {
     const fetchGeographicSalesData = async () => {
       try {
-        const response = await axios.get(`${server}/order/geographicSales`);
+        const token = await AsyncStorage.getItem('token');
+        const response = await axios.get(`${server}/order/geographicSales`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         setGeographicSalesData(response.data.salesByCity);
       } catch (error) {
         console.error('Error fetching sales data:', error);

@@ -23,6 +23,7 @@ const UpdateCategory = ({ navigation, route }) => {
 
   const [id] = useState(route.params.id);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [category, setCategoryName] = useState("");
 
   const showToast = (type, comment) => {
@@ -49,24 +50,33 @@ const UpdateCategory = ({ navigation, route }) => {
     fetchData();
   }, [dispatch, id, isFocused]);
 
-  const { category: categoryDetails } = useSelector((state) => state.other);
+  const { category: categoryDetails, message, error } = useSelector((state) => state.other);
+
+  useEffect(() => {
+    if (error) {
+      showToast("error", error);
+      dispatch({ type: "clearError" });
+      setSubmitting(false);
+    }
+    if (message) {
+      showToast("success", message);
+      dispatch({ type: "clearMessage" });
+      setSubmitting(false);
+      
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1000);
+    }
+  }, [error, message, dispatch]);
 
   const submitHandler = async () => {
     if (!category) {
       showToast("error", "Please enter a category name!");
-      setIsLoading(false);
       return;
     }
 
-    try {
-      await dispatch(updateCategory(id, category));
-      showToast("success", "Category Updated Successfully!");
-    } catch (error) {
-      console.error("Error updating category:", error);
-      showToast("error", "Failed to update category");
-    } finally {
-      setIsLoading(false);
-    }
+    setSubmitting(true);
+    dispatch(updateCategory(id, category));
   };
 
   useEffect(() => {
@@ -124,8 +134,8 @@ const UpdateCategory = ({ navigation, route }) => {
                   padding: 6,
                 }}
                 onPress={submitHandler}
-                loading={loading}
-                disabled={loading}
+                loading={submitting}
+                disabled={submitting}
               >
                 Update
               </Button>

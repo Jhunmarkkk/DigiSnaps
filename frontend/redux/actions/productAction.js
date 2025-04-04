@@ -1,5 +1,6 @@
 import axios from "axios";
 import { server } from "../store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const getAllProducts = (keyword, category) => async (dispatch) => {
   try {
@@ -30,7 +31,13 @@ export const getAdminProducts = () => async (dispatch) => {
     dispatch({
       type: "getAdminProductsRequest",
     });
+    
+    const token = await AsyncStorage.getItem('token');
+    
     const { data } = await axios.get(`${server}/product/admin`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       withCredentials: true,
     });
 
@@ -41,7 +48,7 @@ export const getAdminProducts = () => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "getAdminProductsFail",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Failed to fetch admin products",
     });
   }
 };

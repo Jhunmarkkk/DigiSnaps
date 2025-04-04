@@ -2,7 +2,6 @@ import { app } from "./app.js";
 import { connectDB } from "./data/database.js";
 import cloudinary from "cloudinary";
 
-
 connectDB();
 
 cloudinary.v2.config({
@@ -13,6 +12,6 @@ cloudinary.v2.config({
 
 app.listen(process.env.PORT, '0.0.0.0', () => {
     console.log(`Server listening on port: ${process.env.PORT}, in ${process.env.NODE_ENV} MODE.`);
-    console.log(`Server URL: http://192.168.1.7:${process.env.PORT}`);
+    console.log(`Server URL: http://192.168.43.161:${process.env.PORT}`);
 });
 ; 

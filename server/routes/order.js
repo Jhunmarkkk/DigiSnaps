@@ -25,6 +25,6 @@ router
 
 //charts
 router.get("/dailySales", isAuthenticated, isAdmin, dailySales);
-router.get("/geographicSales", geographicSales);
+router.get("/geographicSales", isAuthenticated, isAdmin, geographicSales);
 
 export default router;

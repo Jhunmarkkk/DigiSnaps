@@ -20,6 +20,9 @@ import { addCategory, deleteCategory } from "../../redux/actions/otherAction";
 import { useMessageAndErrorOther, useSetCategories } from "../../utils/hooks";
 import mime from "mime";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { server } from "../../redux/store";
 
 const Categories = ({ navigation, route, navigate }) => {
   const [category, setCategory] = useState("");
@@ -34,12 +37,42 @@ const Categories = ({ navigation, route, navigate }) => {
   // Fetch categories on component load and when focus changes
   const fetchCategories = async () => {
     setRefreshing(true);
-    await useSetCategories(setCategories, true);
-    setRefreshing(false);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      console.log("Fetching categories with token:", token);
+      
+      const response = await axios.get(`${server}/product/categories`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log("Categories response:", response.data);
+      
+      if (response.data && response.data.categories) {
+        setCategories(response.data.categories);
+      } else {
+        console.error("Invalid categories data format:", response.data);
+        // Try alternative response format
+        if (response.data && Array.isArray(response.data)) {
+          setCategories(response.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error.response || error);
+      Toast.show({
+        type: "error",
+        text1: "Failed to fetch categories",
+      });
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
-    fetchCategories();
+    if (isFocused) {
+      fetchCategories();
+    }
   }, [isFocused]);
 
   // Handle success/error messages
@@ -66,6 +99,13 @@ const Categories = ({ navigation, route, navigate }) => {
   const deleteHandler = (id) => {
     dispatch(deleteCategory(id));
   };
+
+  // Update categories after add/delete operations
+  useEffect(() => {
+    if (message) {
+      fetchCategories(); // Refresh categories after successful operation
+    }
+  }, [message]);
 
   const submitHandler = () => {
     if (!category) {
