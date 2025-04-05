@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { defaultStyle, colors } from "../styles/styles";
 import Header from "./Header";
 import Heading from "./Heading";
@@ -8,6 +8,7 @@ import { Button, RadioButton } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 import { placeOrder } from "../redux/actions/otherAction";
 import { useMessageAndErrorOther } from "../utils/hooks";
+import Toast from "react-native-toast-message";
 
 const Payment = ({ navigation, route }) => {
   const [paymentMethod, setPaymentMethod] = useState("COD");
@@ -17,11 +18,36 @@ const Payment = ({ navigation, route }) => {
   const { isAuthenticated, user } = useSelector((state) => state.user);
   const { cartItems } = useSelector((state) => state.cart);
 
+  // Check authentication status when component mounts
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      Toast.show({
+        type: "error",
+        text1: "Please login first",
+      });
+      navigation.navigate("login");
+    }
+  }, [isAuthenticated, user, navigation]);
+
   const redirectToLogin = () => {
+    Toast.show({
+      type: "error",
+      text1: "Please login first",
+    });
     navigation.navigate("login");
   };
 
-   const codHandler = (paymentInfo) => {
+  const codHandler = (paymentInfo) => {
+    // Double check user and address information
+    if (!user || !user.address || !user.city || !user.country || !user.pinCode) {
+      Toast.show({
+        type: "error",
+        text1: "Please update your profile with shipping address",
+      });
+      navigation.navigate("profile");
+      return;
+    }
+
     const shippingInfo = {
       address: user.address,
       city: user.city,
@@ -33,6 +59,9 @@ const Payment = ({ navigation, route }) => {
     const shippingCharges = route.params.shippingCharges;
     const taxPrice = route.params.tax;
     const totalAmount = route.params.totalAmount;
+
+    console.log("Placing order with auth status:", isAuthenticated);
+    console.log("User data available:", !!user);
 
     dispatch(
       placeOrder(

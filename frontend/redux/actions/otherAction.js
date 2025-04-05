@@ -111,6 +111,13 @@ export const placeOrder =
         type: "placeOrderRequest",
       });
 
+      // Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error("Please login first");
+      }
+
       const { data } = await axios.post(
         `${server}/order/new`,
         {
@@ -126,7 +133,9 @@ export const placeOrder =
         {
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           },
+          withCredentials: false
         }
       );
       dispatch({
@@ -134,9 +143,10 @@ export const placeOrder =
         payload: data.message,
       });
     } catch (error) {
+      console.error("Place order error:", error);
       dispatch({
         type: "placeOrderFail",
-        payload: error.response?.data?.message || "Failed to place order",
+        payload: error.response?.data?.message || error.message || "Failed to place order",
       });
     }
   };
@@ -147,18 +157,33 @@ export const processOrder = (id) => async (dispatch) => {
       type: "processOrderRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
     const { data } = await axios.put(
       `${server}/order/single/${id}`,
-      {}
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        withCredentials: false
+      }
     );
     dispatch({
       type: "processOrderSuccess",
       payload: data.message,
     });
   } catch (error) {
+    console.error("Process order error:", error);
     dispatch({
       type: "processOrderFail",
-      payload: error.response?.data?.message || "Failed to process order",
+      payload: error.response?.data?.message || error.message || "Failed to process order",
     });
   }
 };

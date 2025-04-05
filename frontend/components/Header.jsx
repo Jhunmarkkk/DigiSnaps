@@ -6,6 +6,7 @@ import { Avatar } from "react-native-paper";
 import { colors } from "../styles/styles";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useDispatch } from "react-redux";
+import { clearCart } from "../redux/actions/cartActions";
 
 const Header = ({ back, emptyCart = false, showCartButton = true, showSearchButton = false, onSearchButtonPress }) => {
   const navigate = useNavigation();
@@ -13,9 +14,7 @@ const Header = ({ back, emptyCart = false, showCartButton = true, showSearchButt
   const route = useRoute();
 
   const emptyCartHandler = () => {
-    dispatch({
-      type: "clearCart",
-    });
+    dispatch(clearCart());
   };
 
   const handleCartPress = () => {

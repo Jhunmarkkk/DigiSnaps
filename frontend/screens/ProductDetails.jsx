@@ -26,6 +26,7 @@ import {
   getProductRatings,
 } from "../redux/actions/reviewAction";
 import { deleteReview } from "../redux/actions/deleteReview";
+import { addToCart } from "../redux/actions/cartActions";
 
 const SLIDER_WIDTH = Dimensions.get("window").width;
 const ITEM_WIDTH = SLIDER_WIDTH;
@@ -80,17 +81,14 @@ const ProductDetails = ({ route: { params } }) => {
         type: "error",
         text1: "Out Of Stock",
       });
-    dispatch({
-      type: "addToCart",
-      payload: {
-        product: params.id,
-        name,
-        price,
-        image: images[0]?.url,
-        stock,
-        quantity,
-      },
-    });
+    dispatch(addToCart({
+      product: params.id,
+      name,
+      price,
+      image: images[0]?.url,
+      stock,
+      quantity,
+    }));
     Toast.show({
       type: "success",
       text1: "Added To Cart",

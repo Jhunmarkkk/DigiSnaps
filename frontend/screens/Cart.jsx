@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import { colors, defaultStyle } from "../styles/styles";
 import Header from "../components/Header";
 import Heading from "../components/Heading";
@@ -8,12 +8,23 @@ import CartItem from "../components/CartItem";
 import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import Toast from "react-native-toast-message";
+import { addToCart, removeFromCart } from "../redux/actions/cartActions";
 
 const Cart = () => {
   const navigate = useNavigation();
   const dispatch = useDispatch();
 
   const { cartItems } = useSelector((state) => state.cart);
+
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      Toast.show({
+        type: "info",
+        text1: "Your cart has been restored",
+        visibilityTime: 2000,
+      });
+    }
+  }, []);
 
   const incrementHandler = (id, name, price, image, stock, quantity) => {
     const newQty = quantity + 1;
@@ -22,35 +33,29 @@ const Cart = () => {
         type: "error",
         text1: "Maximum value added",
       });
-    dispatch({
-      type: "addToCart",
-      payload: {
-        product: id,
-        name,
-        price,
-        image,
-        stock,
-        quantity: newQty,
-      },
-    });
+    dispatch(addToCart({
+      product: id,
+      name,
+      price,
+      image,
+      stock,
+      quantity: newQty,
+    }));
   };
 
   const decrementHandler = (id, name, price, image, stock, quantity) => {
     const newQty = quantity - 1;
 
-    if (1 >= quantity) return dispatch({ type: "removeFromCart", payload: id });
+    if (1 >= quantity) return dispatch(removeFromCart(id));
 
-    dispatch({
-      type: "addToCart",
-      payload: {
-        product: id,
-        name,
-        price,
-        image,
-        stock,
-        quantity: newQty,
-      },
-    });
+    dispatch(addToCart({
+      product: id,
+      name,
+      price,
+      image,
+      stock,
+      quantity: newQty,
+    }));
   };
 
   return (

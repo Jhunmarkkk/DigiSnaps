@@ -26,6 +26,9 @@ export const cartReducer = createReducer(
       })
       .addCase("clearCart", (state) => {
         state.cartItems = [];
+      })
+      .addCase("loadCartItems", (state, action) => {
+        state.cartItems = action.payload;
       });
   }
 );

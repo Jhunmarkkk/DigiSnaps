@@ -28,6 +28,7 @@ import { getAllProducts } from "../redux/actions/productAction";
 import { useSetCategories } from "../utils/hooks";
 import { logout } from "../redux/actions/userAction";
 import { store } from "../redux/store";
+import { addToCart } from "../redux/actions/cartActions";
 
 const Home = () => {
   const [category, setCategory] = useState("");
@@ -75,17 +76,14 @@ const Home = () => {
         type: "error",
         text1: "Out Of Stock",
       });
-    dispatch({
-      type: "addToCart",
-      payload: {
-        product: id,
-        name,
-        price,
-        image,
-        stock,
-        quantity: 1,
-      },
-    });
+    dispatch(addToCart({
+      product: id,
+      name,
+      price,
+      image,
+      stock,
+      quantity: 1,
+    }));
     Toast.show({
       type: "success",
       text1: "Added To Cart",
