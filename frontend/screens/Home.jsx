@@ -34,6 +34,7 @@ const Home = () => {
   const [activeSearch, setActiveSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
+  const [priceRange, setPriceRange] = useState("");
 
   const navigate = useNavigation();
   const dispatch = useDispatch();
@@ -49,6 +50,10 @@ const Home = () => {
 
   const showAllProducts = () => {
     setCategory("");
+  };
+
+  const setPriceRangeFilter = (range) => {
+    setPriceRange(range);
   };
 
   const logoutHandler = () => {
@@ -119,6 +124,24 @@ const Home = () => {
       clearTimeout(timeOutId);
     };
   }, [dispatch, searchQuery, category, isFocused]);
+
+  // Filter products by price range
+  const filteredProducts = priceRange 
+    ? products.filter(product => {
+        switch(priceRange) {
+          case "0-1000":
+            return product.price <= 1000;
+          case "1000-5000":
+            return product.price > 1000 && product.price <= 5000;
+          case "5000-10000":
+            return product.price > 5000 && product.price <= 10000;
+          case "10000+":
+            return product.price > 10000;
+          default:
+            return true;
+        }
+      })
+    : products;
 
   const renderCarouselItem = ({ item }) => (
     <TouchableOpacity
@@ -255,11 +278,120 @@ const Home = () => {
               ))}
             </ScrollView>
 
+            {/* Price Range Buttons */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryContainer}
+              style={{ marginVertical: 10 }}
+            >
+              <TouchableOpacity
+                onPress={() => setPriceRangeFilter("")}
+                style={{
+                  backgroundColor:
+                    priceRange === "" ? colors.color1 : colors.color5,
+                  borderRadius: 20,
+                  padding: 10,
+                  marginHorizontal: 5,
+                  marginVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: priceRange === "" ? colors.color2 : colors.color3,
+                  }}
+                >
+                  All Prices
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setPriceRangeFilter("0-1000")}
+                style={{
+                  backgroundColor:
+                    priceRange === "0-1000" ? colors.color1 : colors.color5,
+                  borderRadius: 20,
+                  padding: 10,
+                  marginHorizontal: 5,
+                  marginVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: priceRange === "0-1000" ? colors.color2 : colors.color3,
+                  }}
+                >
+                  ₱0 - ₱1,000
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setPriceRangeFilter("1000-5000")}
+                style={{
+                  backgroundColor:
+                    priceRange === "1000-5000" ? colors.color1 : colors.color5,
+                  borderRadius: 20,
+                  padding: 10,
+                  marginHorizontal: 5,
+                  marginVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: priceRange === "1000-5000" ? colors.color2 : colors.color3,
+                  }}
+                >
+                  ₱1,000 - ₱5,000
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setPriceRangeFilter("5000-10000")}
+                style={{
+                  backgroundColor:
+                    priceRange === "5000-10000" ? colors.color1 : colors.color5,
+                  borderRadius: 20,
+                  padding: 10,
+                  marginHorizontal: 5,
+                  marginVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: priceRange === "5000-10000" ? colors.color2 : colors.color3,
+                  }}
+                >
+                  ₱5,000 - ₱10,000
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setPriceRangeFilter("10000+")}
+                style={{
+                  backgroundColor:
+                    priceRange === "10000+" ? colors.color1 : colors.color5,
+                  borderRadius: 20,
+                  padding: 10,
+                  marginHorizontal: 5,
+                  marginVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: priceRange === "10000+" ? colors.color2 : colors.color3,
+                  }}
+                >
+                  ₱10,000+
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+
             {/* Products */}
             <View style={styles.productContainer}>
-              {products.length > 0 ? (
+              {filteredProducts.length > 0 ? (
                 <FlatList
-                  data={products}
+                  data={filteredProducts}
                   renderItem={({ item }) => (
                     <ProductCard
                       stock={item.stock}
@@ -277,7 +409,7 @@ const Home = () => {
                   contentContainerStyle={styles.scrollViewContent}
                 />
               ) : (
-                <Text>No products available in this category yet.</Text>
+                <Text>No products available in this price range.</Text>
               )}
             </View>
           </View>
