@@ -47,6 +47,10 @@ const Home = () => {
     setCategory(id);
   };
 
+  const showAllProducts = () => {
+    setCategory("");
+  };
+
   const logoutHandler = () => {
     dispatch(logout());
     Toast.show({
@@ -206,6 +210,26 @@ const Home = () => {
               contentContainerStyle={styles.categoryContainer}
               style={{ marginVertical: 10 }}
             >
+              <TouchableOpacity
+                onPress={showAllProducts}
+                style={{
+                  backgroundColor:
+                    category === "" ? colors.color1 : colors.color5,
+                  borderRadius: 20,
+                  padding: 10,
+                  marginHorizontal: 5,
+                  marginVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: category === "" ? colors.color2 : colors.color3,
+                  }}
+                >
+                  All
+                </Text>
+              </TouchableOpacity>
               {categories.map((item) => (
                 <TouchableOpacity
                   key={item._id}

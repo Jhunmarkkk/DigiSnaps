@@ -1,7 +1,7 @@
 import Main from "./Main";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
-import "./utils/axiosConfig"; // Import axios configuration
+// import "./utils/axiosConfig"; // Import axios configuration
 
 export default function App() {
   return (

@@ -21,4 +21,4 @@ export const store = configureStore({
 // 1. Use your computer's local network IP address (not localhost or 127.0.0.1)
 // 2. Make sure your server is running and accepting connections from other devices
 // 3. Check that no firewall is blocking connections to this port
-export const server = "http://192.168.246.228:5000/api/v1";
+export const server = "http://192.168.1.7:5000/api/v1";
