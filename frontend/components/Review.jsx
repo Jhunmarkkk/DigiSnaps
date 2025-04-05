@@ -1,119 +1,153 @@
 import React, { useState, useEffect } from "react";
-import { View, TextInput, Button, StyleSheet, ScrollView } from "react-native";
+import { View, TextInput, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { Rating } from "react-native-ratings";
 import Toast from "react-native-toast-message";
+import { Button } from "react-native-paper";
+import { colors } from "../styles/styles";
 import {
   addReview,
   getAllReviews,
   getProductRatings,
 } from "../redux/actions/reviewAction";
 
-const Review = () => {
-  const user = useSelector((state) => state.user);
-  const product = useSelector((state) => state.product);
-  const reviews = useSelector((state) => state.review.reviews);
+const Review = ({ productId }) => {
+  const { user } = useSelector((state) => state.user);
+  const { loading, error, message } = useSelector((state) => state.review);
+
   const dispatch = useDispatch();
 
-  const [comment, setNewReviewText] = useState("");
+  const [comment, setComment] = useState("");
   const [rating, setRating] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const showToast = (type, comment) => {
+  // Log the productId to verify it's being passed correctly
+  useEffect(() => {
+    console.log("Review component initialized with productId:", productId);
+  }, [productId]);
+
+  const showToast = (type, text) => {
     Toast.show({
       type: type,
-      text1: comment,
+      text1: text,
       visibilityTime: 3000,
       autoHide: true,
     });
   };
 
+  useEffect(() => {
+    if (error) {
+      showToast("error", error);
+      dispatch({ type: "clearError" });
+    }
+    if (message) {
+      showToast("success", message);
+      dispatch({ type: "clearMessage" });
+      
+      // Refresh reviews after adding a new one
+      console.log("Refreshing reviews after adding new review");
+      dispatch(getAllReviews(productId));
+      dispatch(getProductRatings(productId));
+      
+      // Clear form
+      setComment("");
+      setRating(0);
+    }
+  }, [error, message, dispatch, productId]);
+
   const handleAddReview = async () => {
-    if (!comment) {
-      showToast("error", "Please enter a comment.");
-      setIsLoading(false);
+    if (!user) {
+      showToast("error", "Please login to add a review");
       return;
     }
 
-    setIsLoading(true);
+    if (!comment) {
+      showToast("error", "Please enter a comment");
+      return;
+    }
+
+    if (rating === 0) {
+      showToast("error", "Please select a rating");
+      return;
+    }
 
     try {
-      await dispatch(
-        addReview(comment, user.user._id, product.product._id, rating)
-      );
-      showToast("success", "Review added successfully");
-      setNewReviewText("");
-      setRating(0);
+      console.log("Adding review with user:", user._id);
+      console.log("Adding review for product:", productId);
+      console.log("Rating:", rating);
+      console.log("Comment:", comment);
+      
+      dispatch(addReview(comment, rating, productId));
     } catch (error) {
       console.error("Error adding review:", error);
       showToast("error", "Failed to add review");
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (product.product._id) {
-      dispatch(getAllReviews(product.product._id));
-      dispatch(getProductRatings(product.product._id));
-    }
-  }, [dispatch, product.product._id]);
-
   return (
-      <View style={styles.container}>
-        <View style={styles.formContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Add a review..."
-            value={comment}
-            onChangeText={setNewReviewText}
+    <View style={styles.container}>
+      <View style={styles.formContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Add a review..."
+          value={comment}
+          onChangeText={setComment}
+          multiline={true}
+          numberOfLines={3}
+        />
+        <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 10 }}>
+          <Text style={{ marginRight: 10 }}>Rating:</Text>
+          <Rating
+            startingValue={rating}
+            onFinishRating={(value) => setRating(value)}
+            imageSize={20}
+            style={{ paddingVertical: 5 }}
           />
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Rating
-              startingValue={rating}
-              onFinishRating={(value) => setRating(value)}
-              imageSize={20}
-              style={{ paddingVertical: 5 }}
-            />
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginTop: 10,
-            }}
-          >
-            <Button
-              title={"Post Review"}
-              onPress={handleAddReview}
-              disabled={isLoading}
-            />
-          </View>
         </View>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleAddReview}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Submitting..." : "Submit Review"}
+          </Text>
+        </TouchableOpacity>
       </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingVertical: 10,
   },
   formContainer: {
     flexDirection: "column",
     alignItems: "flex-start",
+    width: "100%",
   },
   input: {
-    flex: 1,
-    marginRight: 10,
     marginBottom: 10,
-    marginTop: 30,
     borderWidth: 1,
     borderColor: "gray",
     borderRadius: 5,
     paddingHorizontal: 10,
-    height: 40,
+    paddingVertical: 8,
     width: "100%",
+    textAlignVertical: "top",
+  },
+  button: {
+    backgroundColor: colors.color1,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    width: "100%",
+  },
+  buttonText: {
+    color: colors.color2,
+    fontWeight: "bold",
   },
 });
 

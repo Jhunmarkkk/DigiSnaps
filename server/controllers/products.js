@@ -11,7 +11,7 @@ export const getAllProducts = asyncError(async (req, res, next) => {
     
     console.log(`Product search request - keyword: "${keyword}", category: "${category}"`);
     
-    // Build filter criteria
+    // Build filter category
     const filter = {};
     
     if (keyword) {
@@ -25,12 +25,12 @@ export const getAllProducts = asyncError(async (req, res, next) => {
       filter.category = category;
     }
     
-    console.log("Filter criteria:", filter);
+    console.log("Filter category:", filter);
     
     // Fetch the products with category information
     const products = await Product.find(filter).populate("category");
     
-    console.log(`Found ${products.length} products matching the criteria`);
+    console.log(`Found ${products.length} products matching the category`);
     
     res.status(200).json({
       success: true,

@@ -6,11 +6,18 @@ import { asyncError } from "../middlewares/error.js";
 export const getAllReviews = asyncError(async (req, res, next) => {
   try {
     const productId = req.params.productId;
-    const reviews = await Review.find({ product: productId });
-
-    res.json(reviews);
+    console.log(`Server fetching reviews for product: ${productId}`);
+    
+    // Find all reviews for this product and sort by newest first
+    const reviews = await Review.find({ product: productId })
+      .sort({ createdAt: -1 });
+    
+    console.log(`Server found ${reviews.length} reviews:`, JSON.stringify(reviews));
+    
+    // Return the reviews array
+    res.status(200).json(reviews);
   } catch (error) {
-    console.error(error);
+    console.error("Server error fetching reviews:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

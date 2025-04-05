@@ -4,8 +4,8 @@ const initialState = {
   reviews: [],
   loading: false,
   error: null,
-  message: null, // Adding message field for success message
-  averageRating: null,
+  message: null,
+  averageRating: 0,
 };
 
 export const reviewReducer = createReducer(initialState, (builder) => {
@@ -16,19 +16,21 @@ export const reviewReducer = createReducer(initialState, (builder) => {
     })
     .addCase("getAllReviewsSuccess", (state, action) => {
       state.loading = false;
-      state.reviews = action.payload;
+      state.reviews = Array.isArray(action.payload) ? action.payload : [];
+      console.log("Reducer received reviews:", state.reviews.length);
     })
     .addCase("getAllReviewsFail", (state, action) => {
       state.loading = false;
       state.error = action.payload;
+      state.reviews = [];
     })
     .addCase("addReviewRequest", (state) => {
       state.loading = true;
-      state.error = null; // Clearing any previous errors
+      state.error = null;
     })
     .addCase("addReviewSuccess", (state) => {
       state.loading = false;
-      state.message = "Review added successfully"; // Setting success message
+      state.message = "Review added successfully";
     })
     .addCase("addReviewFail", (state, action) => {
       state.loading = false;
@@ -36,11 +38,11 @@ export const reviewReducer = createReducer(initialState, (builder) => {
     })
     .addCase("deleteReviewRequest", (state) => {
       state.loading = true;
-      state.error = null; // Clearing any previous errors
+      state.error = null;
     })
     .addCase("deleteReviewSuccess", (state) => {
       state.loading = false;
-      state.message = "Review deleted successfully"; // Setting success message
+      state.message = "Review deleted successfully";
     })
     .addCase("deleteReviewFail", (state, action) => {
       state.loading = false;
@@ -57,7 +59,12 @@ export const reviewReducer = createReducer(initialState, (builder) => {
     .addCase("getProductRatingsFail", (state, action) => {
       state.loading = false;
       state.error = action.payload;
+      state.averageRating = 0;
+    })
+    .addCase("clearError", (state) => {
+      state.error = null;
+    })
+    .addCase("clearMessage", (state) => {
+      state.message = null;
     });
 });
-
-export default reviewReducer;
