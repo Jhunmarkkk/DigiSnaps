@@ -1,5 +1,6 @@
 import axios from "axios";
 import { server } from "../store";
+import { getToken } from "../../utils/secureStore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const updatePassword =
@@ -111,8 +112,8 @@ export const placeOrder =
         type: "placeOrderRequest",
       });
 
-      // Get token from AsyncStorage
-      const token = await AsyncStorage.getItem('token');
+      // Get token from SecureStore
+      const token = await getToken();
       
       if (!token) {
         throw new Error("Please login first");
@@ -157,8 +158,8 @@ export const processOrder = (id) => async (dispatch) => {
       type: "processOrderRequest",
     });
 
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    // Get token from SecureStore
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Please login first");
@@ -194,8 +195,8 @@ export const addCategory = (formData) => async (dispatch) => {
       type: "addCategoryRequest",
     });
 
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    // Get token from SecureStore
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Please login first");
@@ -252,8 +253,8 @@ export const deleteCategory = (id) => async (dispatch) => {
       type: "deleteCategoryRequest",
     });
 
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    // Get token from SecureStore
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Please login first");
@@ -370,8 +371,8 @@ export const createProduct = (formData) => async (dispatch) => {
       type: "addProductRequest",
     });
 
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    // Get token from SecureStore
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Authentication token not found. Please login again.");
@@ -404,8 +405,8 @@ export const updateProduct =
         type: "updateProductRequest",
       });
 
-      // Get token from AsyncStorage
-      const token = await AsyncStorage.getItem('token');
+      // Get token from SecureStore
+      const token = await getToken();
       
       if (!token) {
         throw new Error("Authentication token not found. Please login again.");
@@ -447,8 +448,8 @@ export const updateProductImage = (productId, formData) => async (dispatch) => {
       type: "updateProductImageRequest",
     });
 
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    // Get token from SecureStore
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Authentication token not found. Please login again.");
@@ -484,8 +485,8 @@ export const deleteProductImage = (productId, imageId) => async (dispatch) => {
       type: "deleteProductImageRequest",
     });
 
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    // Get token from SecureStore
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Authentication token not found. Please login again.");
@@ -519,8 +520,8 @@ export const deleteProduct = (productId) => async (dispatch) => {
       type: "deleteProductRequest",
     });
 
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    // Get token from SecureStore
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Authentication token not found. Please login again.");

@@ -208,3 +208,82 @@ export const resetPassword = asyncError(async (req,res,next)=>{
     message:"Password Change Successfully, You can login now", 
   });
 });
+
+// Register push notification token
+export const registerPushToken = asyncError(async (req, res, next) => {
+  const { token, deviceInfo } = req.body;
+  
+  if (!token) {
+    return next(new ErrorHandler("Push notification token is required", 400));
+  }
+  
+  // Add or update push token
+  await req.user.addPushToken(token, deviceInfo);
+  
+  // Also update last login time
+  req.user.lastLogin = Date.now();
+  await req.user.save();
+  
+  // Remove stale tokens (not used for 30 days)
+  await req.user.removeStaleTokens(30);
+  
+  res.status(200).json({
+    success: true,
+    message: "Push notification token registered successfully"
+  });
+});
+
+// Unregister push notification token
+export const unregisterPushToken = asyncError(async (req, res, next) => {
+  const { token } = req.body;
+  
+  if (!token) {
+    return next(new ErrorHandler("Push notification token is required", 400));
+  }
+  
+  await req.user.removePushToken(token);
+  
+  res.status(200).json({
+    success: true,
+    message: "Push notification token unregistered successfully"
+  });
+});
+
+// Admin: Remove stale push tokens for all users
+export const cleanupStaleTokens = asyncError(async (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return next(new ErrorHandler("Only admins can perform this action", 403));
+  }
+  
+  // Get days parameter, default to 30 days
+  const days = parseInt(req.query.days) || 30;
+  
+  // Find all users
+  const users = await User.find({});
+  
+  // Count of removed tokens
+  let removedTokens = 0;
+  let affectedUsers = 0;
+  
+  // For each user, remove stale tokens
+  for (const user of users) {
+    const tokensBefore = user.pushTokens.length;
+    await user.removeStaleTokens(days);
+    const tokensAfter = user.pushTokens.length;
+    
+    // If tokens were removed, increment counters
+    if (tokensBefore > tokensAfter) {
+      removedTokens += (tokensBefore - tokensAfter);
+      affectedUsers++;
+    }
+  }
+  
+  res.status(200).json({
+    success: true,
+    message: `Removed ${removedTokens} stale tokens from ${affectedUsers} users`,
+    data: {
+      removedTokens,
+      affectedUsers
+    }
+  });
+});

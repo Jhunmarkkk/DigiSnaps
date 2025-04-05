@@ -1,11 +1,11 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken, deleteToken } from './secureStore';
 
 // Create interceptor to add the authentication token to all requests
 axios.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getToken();
       
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -35,7 +35,7 @@ axios.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       try {
         // Clear the token from storage
-        await AsyncStorage.removeItem('token');
+        await deleteToken();
         console.log('Token removed due to 401 response');
         
         // Redirect to login (this will need to be implemented separately)

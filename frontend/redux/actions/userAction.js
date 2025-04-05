@@ -1,6 +1,11 @@
 import axios from "axios";
 import { server } from "../store";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveToken, getToken, deleteToken } from "../../utils/secureStore";
+import { 
+  registerForPushNotifications, 
+  savePushTokenToServer,
+  unregisterPushToken
+} from "../../utils/notifications";
 
 export const register = (formData) => async (dispatch) => {
     try {
@@ -20,9 +25,12 @@ export const register = (formData) => async (dispatch) => {
 
         console.log('Server response:', response.data);
 
-        // Store token after successful registration
+        // Store token securely after successful registration
         if (response.data.token) {
-            await AsyncStorage.setItem('token', response.data.token);
+            await saveToken(response.data.token);
+            
+            // Register push notification token after successful registration
+            await registerAndSavePushToken();
         }
 
         dispatch({
@@ -67,8 +75,11 @@ export const login = (email, password) => async (dispatch) => {
         console.log('Login response:', data);
 
         if (data.token) {
-            await AsyncStorage.setItem('token', data.token);
-            console.log('Token stored successfully');
+            await saveToken(data.token);
+            console.log('Token stored securely');
+            
+            // Register push notification token after successful login
+            await registerAndSavePushToken();
         } else {
             console.warn('No token received in login response');
         }
@@ -102,7 +113,7 @@ export const loadUser = () => async (dispatch) => {
             type: "loadUserRequest",
         });
 
-        const token = await AsyncStorage.getItem('token');
+        const token = await getToken();
         
         if (!token) {
             console.log('No token found, user needs to login');
@@ -112,7 +123,7 @@ export const loadUser = () => async (dispatch) => {
             });
         }
 
-        console.log('Loading user with token:', token);
+        console.log('Loading user with token');
 
         try {
             const { data } = await axios.get(`${server}/user/me`, {
@@ -122,7 +133,7 @@ export const loadUser = () => async (dispatch) => {
                 withCredentials: false
             });
 
-            console.log('User data loaded:', data);
+            console.log('User data loaded');
             
             if (data.success && data.user) {
                 dispatch({
@@ -137,7 +148,7 @@ export const loadUser = () => async (dispatch) => {
             
             // Clear token if it's invalid
             if (apiError.response?.status === 401) {
-                await AsyncStorage.removeItem('token');
+                await deleteToken();
                 console.log('Token removed due to authentication failure');
             }
             
@@ -161,8 +172,11 @@ export const logout = () => async (dispatch) => {
             type: "logoutRequest",
         });
 
-        // Clear the token from AsyncStorage
-        await AsyncStorage.removeItem('token');
+        // Unregister push notification token
+        await unregisterPushToken();
+
+        // Clear the token from SecureStore
+        await deleteToken();
         
         dispatch({
             type: "logoutSuccess",
@@ -174,6 +188,21 @@ export const logout = () => async (dispatch) => {
             type: "logoutFail",
             payload: error.response?.data?.message || "Failed to logout",
         });
+    }
+};
+
+// Helper function to register for push notifications and save the token to server
+const registerAndSavePushToken = async () => {
+    try {
+        // Register for push notifications
+        const pushToken = await registerForPushNotifications();
+        
+        // If we got a token, save it to the server
+        if (pushToken) {
+            await savePushTokenToServer(pushToken);
+        }
+    } catch (error) {
+        console.error('Error registering push token:', error);
     }
 };
 
