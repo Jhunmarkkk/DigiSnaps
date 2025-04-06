@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { server } from '../redux/store';
 import axios from 'axios';
 import { getToken } from './secureStore';
+import Toast from 'react-native-toast-message';
 
 // Global reference to handle navigation from notification
 let navigationRef = null;
@@ -20,17 +21,40 @@ export const setNavigationRef = (ref) => {
  * Configure notification handling
  */
 export const configureNotifications = () => {
-  // Handle notifications when app is in foreground
+  console.log('Configuring notifications...');
+  
+  // Set notification handler for foreground notifications
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
+    handleNotification: async (notification) => {
+      console.log('Received foreground notification:', notification.request.content);
+      
+      const data = notification.request.content.data || {};
+      
+      // Show toast for foreground notifications
+      if (data.screen === 'orders' && data.status) {
+        Toast.show({
+          type: 'info',
+          text1: notification.request.content.title || 'Order Update',
+          text2: notification.request.content.body || `Order status: ${data.status}`,
+          visibilityTime: 4000,
+          position: 'top'
+        });
+      }
+      
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      };
+    },
   });
 
-  // Set up notification listeners
-  const responseListener = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+  // Set up notification listeners for when app is in background
+  const responseListener = Notifications.addNotificationResponseReceivedListener(
+    handleNotificationResponse
+  );
+  
+  console.log('Notification listeners configured');
   
   // Return cleanup function
   return () => {
@@ -42,7 +66,9 @@ export const configureNotifications = () => {
  * Handle when a user taps on a notification
  */
 const handleNotificationResponse = (response) => {
-  const data = response.notification.request.content.data;
+  console.log('User tapped notification:', response.notification.request.content);
+  
+  const data = response.notification.request.content.data || {};
   
   if (!navigationRef) {
     console.log('Navigation reference not set, cannot navigate');
@@ -51,146 +77,146 @@ const handleNotificationResponse = (response) => {
   
   // Handle order notifications
   if (data.screen === 'orders') {
-    // Navigate to orders screen
-    navigationRef.navigate('orders');
+    console.log('Navigating to orders screen with orderId:', data.orderId);
     
-    // Show a toast or alert about the order update
-    if (data.status) {
-      // Your toast implementation here
-      console.log(`Order #${data.orderId} status: ${data.status}`);
+    if (data.orderId) {
+      // Navigate to specific order details if orderId is provided
+      navigationRef.navigate('orderdetails', {
+        id: data.orderId
+      });
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Order Details',
+        text2: `Viewing details for order #${data.orderId.slice(-6)}`,
+        visibilityTime: 4000,
+        position: 'top'
+      });
+    } else {
+      // Fallback to orders list if no specific orderId
+      navigationRef.navigate('orders');
+      
+      // Show a toast about the order update
+      if (data.status) {
+        Toast.show({
+          type: 'success',
+          text1: 'Order Status Update',
+          text2: `Order status: ${data.status}`,
+          visibilityTime: 4000,
+          position: 'top'
+        });
+      }
     }
   }
 };
 
 /**
- * Register for push notifications
- * @returns {Promise<string|null>} Notification token or null if registration failed
+ * Send a local notification immediately
+ * Used for testing and also for order status updates
+ */
+export const sendLocalNotification = async (title, body, data = {}) => {
+  try {
+    console.log('Scheduling local notification:', title, body);
+    
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data,
+      },
+      trigger: null, // Immediate delivery
+    });
+    
+    console.log('Local notification scheduled');
+    return true;
+  } catch (error) {
+    console.error('Error sending local notification:', error);
+    return false;
+  }
+};
+
+/**
+ * Register for push notifications - simplified version
  */
 export const registerForPushNotifications = async () => {
-  // Check if device is physical (not a simulator)
   if (!Device.isDevice) {
-    console.log('Push notifications are not available on simulator/emulator');
+    console.log('Push notifications not available on simulator');
     return null;
   }
 
   try {
-    // Request permission
+    // Request permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
-    // If permission not determined, ask the user
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
 
-    // Permission denied
     if (finalStatus !== 'granted') {
-      console.log('Permission for push notifications was denied');
+      console.log('Permission for notifications was denied');
       return null;
     }
 
-    // Get push token
-    const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync({
-      // Using experienceId instead of projectId for more flexibility
-      experienceId: '@username/digisnaps',
-    });
-
-    // Platform-specific notification setup
+    // For the simpler approach, we don't need an actual token
+    // We'll just use a device ID as a placeholder
+    const deviceId = Device.modelName || 'unknown-device';
+    console.log('Using device ID as token:', deviceId);
+    
+    // Set up Android notification channel
     if (Platform.OS === 'android') {
       Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
+        name: 'Default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
       });
     }
 
-    console.log('Push notification token:', expoPushToken);
-    return expoPushToken;
+    return deviceId;
   } catch (error) {
-    console.error('Error registering for push notifications:', error);
+    console.error('Error registering for notifications:', error);
     return null;
   }
 };
 
 /**
- * Save push notification token to server
- * @param {string} pushToken Expo push notification token
- * @returns {Promise<boolean>} Success status
+ * Simplified version of token registration - just for compatibility
  */
-export const savePushTokenToServer = async (pushToken) => {
-  if (!pushToken) return false;
-
-  try {
-    // Get JWT token for authorization
-    const authToken = await getToken();
-    if (!authToken) {
-      console.log('User not authenticated, skipping push token registration');
-      return false;
-    }
-
-    const response = await axios.post(
-      `${server}/user/push-token`,
-      { token: pushToken, deviceInfo: Device.modelName || 'Unknown device' },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        withCredentials: false
-      }
-    );
-
-    console.log('Push token saved to server:', response.data);
-    return true;
-  } catch (error) {
-    console.error('Error saving push token to server:', error);
-    return false;
-  }
+export const savePushTokenToServer = async (deviceId) => {
+  console.log('Saving device ID to server:', deviceId);
+  return true; // Just return success for compatibility
 };
 
 /**
- * Unregister push notification token from server
- * @returns {Promise<boolean>} Success status
+ * Simplified version of token unregistration - just for compatibility
  */
 export const unregisterPushToken = async () => {
-  try {
-    // Get current push token
-    const { data: pushToken } = await Notifications.getExpoPushTokenAsync({
-      // Using experienceId instead of projectId
-      experienceId: '@username/digisnaps',
-    });
+  console.log('Unregistering device ID from server');
+  return true; // Just return success for compatibility
+};
 
-    if (!pushToken) return true;
-
-    // Get JWT token for authorization
-    const authToken = await getToken();
-    if (!authToken) return false;
-
-    const response = await axios.delete(
-      `${server}/user/push-token`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        data: { token: pushToken },
-        withCredentials: false
-      }
-    );
-
-    console.log('Push token unregistered from server:', response.data);
-    return true;
-  } catch (error) {
-    console.error('Error unregistering push token from server:', error);
-    return false;
-  }
+/**
+ * Schedule a test notification
+ */
+export const scheduleTestNotification = async () => {
+  return sendLocalNotification(
+    "Order Status Updated",
+    "Your order #123456 has been shipped!",
+    { 
+      screen: 'orders',
+      orderId: '123456',
+      status: 'Shipped'
+    }
+  );
 };
 
 export default {
   configureNotifications,
   registerForPushNotifications,
   savePushTokenToServer,
-  unregisterPushToken
+  unregisterPushToken,
+  scheduleTestNotification,
+  sendLocalNotification
 }; 

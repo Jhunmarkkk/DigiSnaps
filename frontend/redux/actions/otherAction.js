@@ -2,6 +2,7 @@ import axios from "axios";
 import { server } from "../store";
 import { getToken } from "../../utils/secureStore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { sendLocalNotification } from "../../utils/notifications";
 
 export const updatePassword =
   (oldPassword, newPassword) => async (dispatch) => {
@@ -143,6 +144,24 @@ export const placeOrder =
         type: "placeOrderSuccess",
         payload: data.message,
       });
+      
+      // Send a notification when order is placed successfully
+      const orderId = data.order || data._id;
+      if (orderId) {
+        // Format a readable order ID
+        const shortOrderId = typeof orderId === 'string' ? orderId.slice(-6) : String(Date.now()).slice(-6);
+        
+        // Send a local notification about the new order
+        await sendLocalNotification(
+          "Order Placed Successfully!",
+          `Your order #${shortOrderId} has been placed and is being prepared.`,
+          {
+            screen: 'orders',
+            orderId: orderId,
+            status: "Preparing"
+          }
+        );
+      }
     } catch (error) {
       console.error("Place order error:", error);
       dispatch({
@@ -176,6 +195,24 @@ export const processOrder = (id) => async (dispatch) => {
         withCredentials: false
       }
     );
+    
+    // Format a readable order ID (last 6 characters)
+    const shortOrderId = id.slice(-6);
+    
+    // Get the new status from the response
+    const newStatus = data.status || "Updated";
+    
+    // Send a local notification about the status update
+    await sendLocalNotification(
+      "Order Status Updated",
+      `Your order #${shortOrderId} has been ${newStatus.toLowerCase()}`,
+      {
+        screen: 'orders',
+        orderId: id,
+        status: newStatus
+      }
+    );
+    
     dispatch({
       type: "processOrderSuccess",
       payload: data.message,

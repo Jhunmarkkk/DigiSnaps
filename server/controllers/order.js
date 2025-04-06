@@ -143,8 +143,8 @@ export const proccessOrder = asyncError(async (req, res, next) => {
   // Send push notification to user about order status update
   try {
     await sendPushNotificationToUser(order.user, {
-      title: "Order Status Updated",
-      body: `Your order #${order._id} has been ${newStatus.toLowerCase()}!`,
+      title: "DigiSnaps Order Update",
+      body: `Your order #${order._id.toString().slice(-6)} has been ${newStatus.toLowerCase()}!`,
       data: { 
         screen: 'orders',
         orderId: order._id.toString(),

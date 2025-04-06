@@ -20,6 +20,7 @@ import Profile from "./screens/Profile";
 import UpdateProfile from "./screens/UpdateProfile";
 import ChangePassword from "./screens/ChangePassword";
 import Orders from "./screens/Orders";
+import OrderDetails from "./screens/OrderDetails";
 import AdminDashboard from "./screens/Admin/AdminDashboard";
 import Categories from "./screens/Admin/Categories";
 import AdminOrders from "./screens/Admin/AdminOrders";
@@ -174,6 +175,7 @@ const StackNavigator = () => {
       <Stack.Screen name="newproduct" component={NewProduct} />
       <Stack.Screen name="productimages" component={ProductImages} />
       <Stack.Screen name="products" component={Products} />
+      <Stack.Screen name="orderdetails" component={OrderDetails} />
     </Stack.Navigator>
   );
 };
@@ -187,6 +189,12 @@ const Main = () => {
   useEffect(() => {
     dispatch(loadUser());
     
+    // Set navigation reference for notifications to use
+    if (navigationRef.current) {
+      setNavigationRef(navigationRef.current);
+      console.log('Navigation reference set for notifications');
+    }
+    
     // Configure push notifications
     const unsubscribe = configureNotifications();
     
@@ -194,7 +202,7 @@ const Main = () => {
       // Clean up notification listeners
       if (unsubscribe) unsubscribe();
     };
-  }, [dispatch]);
+  }, [dispatch, navigationRef.current]);
 
   const getInitialRoute = () => {
     if (!isAuthenticated) return "login";
@@ -206,7 +214,11 @@ const Main = () => {
     <NavigationContainer 
       ref={(ref) => {
         navigationRef.current = ref;
-        setNavigationRef(ref);
+        // Set the navigation reference for notifications as soon as it's available
+        if (ref) {
+          setNavigationRef(ref);
+          console.log('Navigation reference set on NavigationContainer mount');
+        }
       }}
     >
       <Drawer.Navigator

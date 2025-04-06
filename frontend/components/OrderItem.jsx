@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import React from "react";
 import { colors } from "../styles/styles";
 import { Button } from "react-native-paper";
@@ -14,16 +14,11 @@ const OrderItem = ({
   admin = false,
   loading,
   i = 0,
+  onPress,
 }) => {
-
   
-  return (
-    <View
-      style={{
-        ...styles.container,
-        backgroundColor:colors.color3,
-      }}
-    >
+  const OrderContent = () => (
+    <>
       <Text
         style={{
           ...styles.text,
@@ -50,13 +45,41 @@ const OrderItem = ({
             alignSelf: "center",
             marginTop: 10,
           }}
-          onPress={() => updateHandler(id)}
+          onPress={() => updateHandler(id, status)}
           loading={loading}
           disabled={loading || status === "Delivered"}
         >
           Update
         </Button>
       )}
+    </>
+  );
+  
+  // If it's a regular user and onPress is provided, make the item touchable
+  if (!admin && onPress) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        style={{
+          ...styles.container,
+          backgroundColor: colors.color3,
+        }}
+      >
+        <OrderContent />
+      </TouchableOpacity>
+    );
+  }
+  
+  // For admin or when no onPress handler is provided
+  return (
+    <View
+      style={{
+        ...styles.container,
+        backgroundColor: colors.color3,
+      }}
+    >
+      <OrderContent />
     </View>
   );
 };

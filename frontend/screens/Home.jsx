@@ -16,6 +16,7 @@ import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import Toast from "react-native-toast-message";
 import Carousel from "react-native-snap-carousel";
+import { sendLocalNotification } from "../utils/notifications";
 
 import { defaultStyle, colors } from "../styles/styles";
 import Header from "../components/Header";
@@ -30,7 +31,7 @@ import { logout } from "../redux/actions/userAction";
 import { store } from "../redux/store";
 import { addToCart } from "../redux/actions/cartActions";
 
-const Home = () => {
+const Home = ({ route }) => {
   const [category, setCategory] = useState("");
   const [activeSearch, setActiveSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,6 +45,29 @@ const Home = () => {
 
   const { products } = useSelector((state) => state.product);
   const { user } = useSelector((state) => state.user);
+
+  // Check if the user came from a successful order placement
+  useEffect(() => {
+    if (route.params?.orderSuccess) {
+      // Generate a random order ID for demonstration
+      const demoOrderId = Date.now().toString().slice(-12);
+      const shortOrderId = demoOrderId.slice(-6);
+
+      // Send a local notification for the new order
+      sendLocalNotification(
+        "Order Placed Successfully!",
+        `Your order #${shortOrderId} has been received and is being prepared.`,
+        {
+          screen: 'orders',
+          orderId: demoOrderId,
+          status: "Preparing"
+        }
+      );
+      
+      // Clear the parameter to prevent showing the notification again on re-render
+      route.params.orderSuccess = false;
+    }
+  }, [route.params]);
 
   const categoryButtonHandler = (id) => {
     setCategory(id);

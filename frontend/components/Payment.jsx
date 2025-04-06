@@ -74,14 +74,21 @@ const Payment = ({ navigation, route }) => {
         totalAmount,
         paymentInfo
       )
-    ).then(() => {
+    ).then((result) => {
       // Dispatch an action to clear the cart after placing the order
       dispatch({
         type: "clearCart",
       });
+      
+      // Show success toast
+      Toast.show({
+        type: "success",
+        text1: "Order Placed Successfully",
+        text2: "You can track your order in My Orders section"
+      });
   
       // Redirect user to home screen
-      navigation.navigate("home");
+      navigation.navigate("home", { orderSuccess: true });
     });
   };
 
