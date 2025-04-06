@@ -132,22 +132,25 @@ const Home = () => {
   return (
     <SafeAreaView
       style={{
-        alignSelf: "stretch",
-        paddingTop: Platform.OS === "android" ? -10 : 0,
         flex: 1,
+        backgroundColor: colors.color2, // Match the background color
       }}
     >
       <View style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {activeSearch && (
-            <SearchModal
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              setActiveSearch={setActiveSearch}
-              products={products}
-            />
-          )}
-          <View style={defaultStyle}>
+        {activeSearch && (
+          <SearchModal
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            setActiveSearch={setActiveSearch}
+            products={products}
+          />
+        )}
+        
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{paddingBottom: 80}}
+        >
+          <View style={[defaultStyle, {paddingTop: 20}]}>
             <Header
               showCartButton={false}
               showSearchButton={true}
@@ -160,7 +163,7 @@ const Home = () => {
                 style={{
                   position: "absolute",
                   right: 80,
-                  top: 20,
+                  top: 40, // Increased to account for the paddingTop
                   zIndex: 10,
                 }}
                 onPress={logoutHandler}
@@ -199,61 +202,63 @@ const Home = () => {
               <Heading text1="Digital Camera" text2="Collections" />
             </View>
 
-            {/* Category Buttons */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryContainer}
-              style={{ marginVertical: 10 }}
-            >
-              {categories.map((item) => (
-                <TouchableOpacity
-                  key={item._id}
-                  onPress={() => categoryButtonHandler(item._id)}
-                  style={{
-                    backgroundColor:
-                      category === item._id ? colors.color1 : colors.color5,
-                    borderRadius: 20,
-                    padding: 10,
-                    marginHorizontal: 5,
-                    marginVertical: 5,
-                  }}
-                >
-                  <Text
+            {/* Categories */}
+            <View style={styles.categoryContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  padding: 5,
+                }}
+              >
+                {categories.map((item, index) => (
+                  <Button
+                    key={item._id}
                     style={{
-                      fontSize: 12,
-                      color: category === item._id ? colors.color2 : colors.color3,
+                      backgroundColor:
+                        category === item._id ? colors.color5 : colors.color1,
+                      borderRadius: 100,
+                      margin: 5,
                     }}
+                    onPress={() => categoryButtonHandler(item._id)}
                   >
-                    {item.category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: category === item._id ? colors.color2 : colors.color5,
+                      }}
+                    >
+                      {item.category}
+                    </Text>
+                  </Button>
+                ))}
+              </ScrollView>
+            </View>
 
             {/* Products */}
-            <View style={styles.productContainer}>
+            <View style={{
+              flex: 1,
+              flexDirection: "row",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              paddingBottom: 30,
+            }}>
               {products.length > 0 ? (
-                <FlatList
-                  data={products}
-                  renderItem={({ item }) => (
-                    <ProductCard
-                      stock={item.stock}
-                      name={item.name}
-                      price={item.price}
-                      image={item.images[0]?.url}
-                      addToCartHandler={addToCartHandler}
-                      id={item._id}
-                      key={item._id}
-                      navigate={navigate}
-                    />
-                  )}
-                  keyExtractor={(item) => item._id}
-                  numColumns={2} // Display two products per row
-                  contentContainerStyle={styles.scrollViewContent}
-                />
+                products.map((item) => (
+                  <ProductCard
+                    key={item._id}
+                    stock={item.stock}
+                    name={item.name}
+                    price={item.price}
+                    image={item.images[0]?.url}
+                    addToCartHandler={addToCartHandler}
+                    id={item._id}
+                    navigate={navigate}
+                    i={item._id}
+                  />
+                ))
               ) : (
-                <Text>No products available in this category yet.</Text>
+                <Text style={{marginTop: 20, fontSize: 16}}>No products available in this category.</Text>
               )}
             </View>
           </View>

@@ -51,10 +51,50 @@ export const getProductRatings = asyncError(async (req, res, next) => {
 export const addReview = asyncError(async (req, res, next) => {
   try {
     const { comment, productId, userId, rating } = req.body;
-
+    
+    console.log("Adding review with user:", userId);
+    console.log("Adding review for product:", productId);
+    console.log("Rating:", rating);
+    console.log("Comment:", comment);
+    
+    // Check if userId is a valid MongoDB ObjectId
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(userId);
+    
+    // Find the user document
+    let user;
+    if (isValidObjectId) {
+      // If it's a valid ObjectId, find by _id
+      user = await User.findById(userId);
+    } else {
+      // If not a valid ObjectId, it might be a Google ID
+      console.log("User ID is not a valid MongoDB ObjectId, trying to find by googleId or email");
+      user = await User.findOne({ googleId: userId });
+      
+      // If not found by googleId, try finding by basic info if available
+      if (!user && req.user) {
+        user = await User.findById(req.user._id);
+      }
+    }
+    
+    // If user still not found, return error
+    if (!user) {
+      console.error("User not found with ID:", userId);
+      return res
+        .status(400)
+        .json({ success: false, message: "User not found" });
+    }
+    
+    console.log("Adding review with data:", {
+      comment, 
+      productId, 
+      userId: user._id.toString(),
+      rating
+    });
+    
+    // Check if the user has ordered and received the product
     const userOrder = await Order.findOne({
       "orderItems.product": productId,
-      user: userId,
+      user: user._id,
       orderStatus: "Delivered",
     });
 
@@ -65,18 +105,12 @@ export const addReview = asyncError(async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(userId);
-    if (!user)
-      return res
-        .status(400)
-        .json({ success: false, message: "User not found" });
-
     if (!user.reviews) {
       user.reviews = [];
     }
 
     const existingReview = await Review.findOne({
-      user: userId,
+      user: user._id,
       product: productId,
     });
 
@@ -95,7 +129,7 @@ export const addReview = asyncError(async (req, res, next) => {
     const newReview = await Review.create({
       comment,
       product: productId,
-      user: userId,
+      user: user._id,
       rating,
     });
 
@@ -109,7 +143,7 @@ export const addReview = asyncError(async (req, res, next) => {
       message: "Reviewed Successfully",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Review error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

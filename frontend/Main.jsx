@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
@@ -6,6 +6,7 @@ import {
   DrawerItem,
   createDrawerNavigator,
 } from "@react-navigation/drawer";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Home from "./screens/Home";
 import ProductDetails from "./screens/ProductDetails";
 import Toast from "react-native-toast-message";
@@ -130,16 +131,31 @@ const StackNavigator = () => {
 
 const Main = () => {
   const dispatch = useDispatch();
-  const { user, isAuthenticated } = useSelector((state) => state.user);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    dispatch(loadUser());
+    const checkForTokens = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        
+        if (token) {
+          dispatch(loadUser());
+        } else {
+          dispatch({ type: "clearError" });
+        }
+      } catch (error) {
+        console.log("Error checking for tokens:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkForTokens();
   }, [dispatch]);
 
   return (
     <NavigationContainer>
       <Drawer.Navigator
-        initialRouteName={isAuthenticated ? "home" : "login"}
         drawerContent={(props) => <DrawerContent {...props} />}
       >
         <Drawer.Screen name=" " component={StackNavigator} />

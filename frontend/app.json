@@ -2,16 +2,17 @@
   "expo": {
     "name": "DigiSnaps",
     "slug": "DigiSnaps",
+    "owner": "jhunmark19",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "platforms": ["android"],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
-      
     },
     "assetBundlePatterns": [
       "**/*"
@@ -20,8 +21,10 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "DigiSnaps needs access to your camera to take product photos.",
-        "NSPhotoLibraryUsageDescription": "DigiSnaps needs access to your photos to upload product images."
-      }
+        "NSPhotoLibraryUsageDescription": "DigiSnaps needs access to your photos to upload product images.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.digi.snaps"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,10 +33,12 @@
       },
       "package": "com.digi.snaps",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ]
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -45,11 +50,24 @@
           "photosPermission": "DigiSnaps needs access to your photos to upload product images.",
           "cameraPermission": "DigiSnaps needs access to your camera to take product photos."
         }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.733273417462-1amfpj559hib5eisk9eitbnm7naaoc9f"
+        }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "b492891e-2c35-4d0a-bc6d-1f5ecda602ab"
+        "projectId": "159f3190-dd4a-4f81-a1f4-6fce0d44cfc4"
+      }
+    },
+    "scheme": "digisnaps",
+    "oauth": {
+      "google": {
+        "clientId": "733273417462-1amfpj559hib5eisk9eitbnm7naaoc9f.apps.googleusercontent.com",
+        "androidClientId": "733273417462-okbthourh1fofrpdtv3hc7rg0a4u98l9.apps.googleusercontent.com"
       }
     }
   }

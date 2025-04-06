@@ -15,6 +15,16 @@ const schema = new mongoose.Schema({
     unique: [true, "Email Already Exist"],
     validate: validator.isEmail,
   },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true, // Allow multiple null values (for non-Google users)
+  },
+  firebaseUid: {
+    type: String,
+    unique: true,
+    sparse: true, // Allow multiple null values (for non-Firebase users)
+  },
   password: {
     type: String,
     required: [true, "Please Enter Password"],

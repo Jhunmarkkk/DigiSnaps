@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import React, { useEffect, useState } from "react";
 import {
   defaultStyle,
@@ -19,12 +19,16 @@ import {
 import { useIsFocused } from "@react-navigation/native";
 import mime from "mime";
 import { updatePic } from "../redux/actions/otherAction";
+import SwitchGoogleAccount from "../components/SwitchGoogleAccount";
+import GoogleAccountInfo from "../components/GoogleAccountInfo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Profile = ({ navigation, route }) => {
   const { user } = useSelector((state) => state.user);
   const [avatar, setAvatar] = useState(
     user?.avatar ? user.avatar.url : defaultImg
   );
+  const [isGoogleAccount, setIsGoogleAccount] = useState(false);
 
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
@@ -77,6 +81,18 @@ const Profile = ({ navigation, route }) => {
     }
 
     dispatch(loadUser());
+    
+    // Check if this is a Google account
+    const checkGoogleAccount = async () => {
+      try {
+        const googleCredentials = await AsyncStorage.getItem('googleCredentials');
+        setIsGoogleAccount(!!googleCredentials);
+      } catch (error) {
+        console.error("Error checking Google credentials:", error);
+      }
+    };
+    
+    checkGoogleAccount();
   }, [route.params, dispatch, isFocused]);
 
   useEffect(() => {
@@ -87,8 +103,8 @@ const Profile = ({ navigation, route }) => {
 
   return (
     <>
-      <View style={defaultStyle}>
-        <View>
+      <ScrollView style={defaultStyle} contentContainerStyle={{paddingBottom: 100}}>
+        <View style={{paddingTop: 20}}>
           <Text style={formHeading}>Profile</Text>
         </View>
 
@@ -126,6 +142,11 @@ const Profile = ({ navigation, route }) => {
               >
                 {user?.email}
               </Text>
+              
+              {isGoogleAccount && <SwitchGoogleAccount style={styles.switchAccount} />}
+              
+              {/* Display Google Account info if the user is logged in with Google */}
+              {isGoogleAccount && <GoogleAccountInfo />}
             </View>
             <View>
               <View
@@ -175,7 +196,7 @@ const Profile = ({ navigation, route }) => {
             </View>
           </>
         )}
-      </View>
+      </ScrollView>
       <Footer />
     </>
   );
@@ -193,6 +214,9 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: 10,
     color: colors.color3,
+  },
+  switchAccount: {
+    marginTop: 10,
   },
 });
 export default Profile;

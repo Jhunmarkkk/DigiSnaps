@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "76389157820",
+    "project_id": "digisnaps-21361",
+    "storage_bucket": "digisnaps-21361.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:76389157820:android:04f4d591d4845a41de39b9",
+        "android_client_info": {
+          "package_name": "com.digi.snaps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJo6l6oqFWSze3kFLeR-s0sNcJ10ijbKQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

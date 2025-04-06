@@ -3,6 +3,7 @@ import {User} from "../models/user.js"
 import ErrorHandler from "../utils/error.js";
 import { cookieOptions, getDataUri, sendEmail, sendToken } from "../utils/features.js";
 import cloudinary from "cloudinary";
+import fetch from "node-fetch";
 
 export const login = asyncError(async  (req,res,next) => {
     const { email, password } = req.body;
@@ -207,4 +208,105 @@ export const resetPassword = asyncError(async (req,res,next)=>{
     success: true,
     message:"Password Change Successfully, You can login now", 
   });
+});
+
+export const googleLogin = asyncError(async (req, res, next) => {
+  try {
+    const { idToken, userInfo, firebaseToken, firebaseUid } = req.body;
+    
+    // Check if userInfo is properly received
+    if (!userInfo || !userInfo.email) {
+      console.error("Invalid user data received:", req.body);
+      return next(new ErrorHandler("Invalid user data received from Google", 400));
+    }
+    
+    console.log("Google login attempt with:", userInfo.email);
+    if (firebaseUid) {
+      console.log("Firebase UID provided:", firebaseUid);
+    }
+    
+    // For production, you should verify the ID token
+    // For now, we'll trust the token and use the userInfo directly
+    const googleId = userInfo.id;
+    
+    // Check if user exists by email, googleId, or firebaseUid
+    let user = await User.findOne({ 
+      $or: [
+        { email: userInfo.email },
+        { googleId: googleId },
+        ...(firebaseUid ? [{ firebaseUid }] : [])
+      ]
+    });
+    
+    if (user) {
+      console.log("Existing user found:", user.email);
+      
+      // Update the googleId if it's not set yet
+      if (!user.googleId && googleId) {
+        user.googleId = googleId;
+        console.log("Updated googleId for user");
+      }
+      
+      // Update the firebaseUid if it's not set yet
+      if (!user.firebaseUid && firebaseUid) {
+        user.firebaseUid = firebaseUid;
+        console.log("Updated firebaseUid for user");
+      }
+      
+      // Update the user's avatar if it has changed (optional)
+      if (userInfo.photo && (!user.avatar || user.avatar.url !== userInfo.photo)) {
+        console.log("Updating user avatar");
+        user.avatar = {
+          public_id: `google_${googleId || Date.now()}`,
+          url: userInfo.photo
+        };
+      }
+      
+      // Save user if changes were made
+      if ((!user.googleId && googleId) || 
+          (!user.firebaseUid && firebaseUid) || 
+          (userInfo.photo && (!user.avatar || user.avatar.url !== userInfo.photo))) {
+        await user.save();
+        console.log("User updated successfully");
+      }
+      
+      // User exists, login
+      sendToken(user, res, `Welcome back, ${user.name}`, 200);
+    } else {
+      console.log("Creating new user from Google account:", userInfo.email);
+      try {
+        // Create new user
+        const avatar = userInfo.photo ? {
+          public_id: `google_${googleId || Date.now()}`,
+          url: userInfo.photo
+        } : undefined;
+        
+        // Generate a random password since we don't need it for Google auth
+        const randomPassword = Math.random().toString(36).slice(-8);
+        
+        user = await User.create({
+          name: userInfo.name || "Google User",
+          email: userInfo.email,
+          password: randomPassword,
+          googleId: googleId,
+          firebaseUid: firebaseUid || null,
+          avatar,
+          address: "Update your address",
+          city: "Update your city",
+          country: "Update your country",
+          pinCode: 0,
+        });
+        
+        console.log("New user created:", user._id);
+        
+        sendToken(user, res, `Welcome to DigiSnaps, ${user.name}`, 201);
+      } catch (createError) {
+        console.error("Error creating user:", createError);
+        return next(new ErrorHandler(`Failed to create user: ${createError.message}`, 500));
+      }
+    }
+  } catch (error) {
+    console.error("Google login error:", error);
+    return next(new ErrorHandler(`Google authentication failed: ${error.message}`, 400));
+  }
 });

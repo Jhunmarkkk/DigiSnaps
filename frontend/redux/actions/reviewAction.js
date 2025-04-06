@@ -92,11 +92,44 @@ export const addReview = (comment, rating, productId) => async (dispatch, getSta
       throw new Error("User not logged in or user ID not found");
     }
     
+    // Check if the user ID appears to be a Google ID (not a MongoDB ObjectId)
+    // MongoDB ObjectIds are typically 24 hexadecimal characters
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(user._id);
+    
+    // If it's not a valid MongoDB ObjectId (likely a Google ID), we need to first find the user's actual MongoDB ID
+    let userId = user._id;
+    
+    if (!isMongoId) {
+      console.log("User ID is not a valid MongoDB ObjectId, fetching user data");
+      
+      try {
+        // Call the server to get the user's MongoDB ID based on their cached data
+        const userDataResponse = await axios.get(
+          `${server}/user/me`, 
+          {
+            headers: {
+              "Authorization": `Bearer ${token}`
+            },
+            withCredentials: false
+          }
+        );
+        
+        if (userDataResponse.data && userDataResponse.data.user && userDataResponse.data.user._id) {
+          userId = userDataResponse.data.user._id;
+          console.log("Retrieved MongoDB user ID:", userId);
+        } else {
+          console.error("Failed to get valid user data from server");
+        }
+      } catch (userError) {
+        console.error("Error fetching user data:", userError);
+      }
+    }
+    
     const reviewData = {
       comment,
       rating: Number(rating),
       productId,
-      userId: user._id
+      userId
     };
     
     console.log("Adding review with data:", reviewData);

@@ -97,9 +97,9 @@ const SignUp = ({ navigation, route }) => {
 
   return (
     <>
-      <View style={defaultStyle}>
+      <ScrollView style={defaultStyle} contentContainerStyle={{paddingBottom: 80}}>
         {/* Heading */}
-        <View style={{ marginBottom: 20 }}>
+        <View style={{ marginTop: 20, marginBottom: 20 }}>
           <Text style={formHeading}>Sign Up</Text>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -112,15 +112,14 @@ const SignUp = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
+        <View
           style={{
             padding: 20,
             borderRadius: 10,
             backgroundColor: colors.color4,
           }}
         >
-          <View style={{ minHeight: 900 }}>
+          <View>
             <Avatar.Image
               style={{
                 alignSelf: "center",
@@ -194,8 +193,8 @@ const SignUp = ({ navigation, route }) => {
               Sign Up
             </Button>
           </View>
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
 
       <Footer activeRoute="profile" />
     </>

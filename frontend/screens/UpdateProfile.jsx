@@ -17,12 +17,12 @@ import { useMessageAndErrorOther } from "../utils/hooks";
 const UpdateProfile = ({ navigation }) => {
   const { user } = useSelector((state) => state.user);
 
-  const [name, setName] = useState(user?.name);
-  const [email, setEmail] = useState(user?.email);
-  const [address, setAddress] = useState(user?.address);
-  const [city, setCity] = useState(user?.city);
-  const [country, setCountry] = useState(user?.country);
-  const [pinCode, setPinCode] = useState(user?.pinCode.toString());
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [address, setAddress] = useState(user?.address || "");
+  const [city, setCity] = useState(user?.city || "");
+  const [country, setCountry] = useState(user?.country || "");
+  const [pinCode, setPinCode] = useState(user?.pinCode ? user.pinCode.toString() : "");
 
   const dispatch = useDispatch();
 

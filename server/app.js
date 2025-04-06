@@ -17,7 +17,10 @@ app.use(
     cors({
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE"],
-      origin: ["http://192.168.246.228:19000", "http://192.168.246.228:19001", "http://192.168.246.228:19002", "exp://192.168.246.228:19000", "http://localhost:19000", "http://localhost:19001", "http://localhost:19002"],
+      origin: function(origin, callback) {
+        // Allow all origins for development
+        return callback(null, true);
+      }
     })
   );
 

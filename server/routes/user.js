@@ -1,11 +1,13 @@
 import express from "express";
-import { changePassword, forgetPassword, getMyProfile, logOut, login, register, resetPassword, updatePicture, updateProfile } from "../controllers/userController.js";
+import { changePassword, forgetPassword, getMyProfile, googleLogin, logOut, login, register, resetPassword, updatePicture, updateProfile } from "../controllers/userController.js";
 import { isAuthenticated } from "../middlewares/auth.js";
 import { singleUpload } from "../middlewares/multer.js";
 
 const router = express.Router();
 
 router.post("/login", login);
+
+router.post("/google-login", googleLogin);
 
 router.post("/register",singleUpload, register);
 

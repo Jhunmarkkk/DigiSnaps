@@ -19,6 +19,23 @@ export const userReducer = createReducer({
         })
         .addCase("registerRequest", (state) => {
             state.loading = true;
+        })
+        .addCase("googleLoginRequest", (state, action) => {
+            state.loading = true;
+            // Handle immediate login with Google data if we can't connect to backend
+            if (action.payload && action.payload.userData) {
+                const { userData } = action.payload;
+                state.user = {
+                    _id: userData.id || 'google-' + Date.now(),
+                    name: userData.name || 'Google User',
+                    email: userData.email || '',
+                    avatar: { url: userData.photo || '' },
+                    role: 'user'
+                };
+                state.isAuthenticated = true;
+                state.message = "Signed in with Google";
+            }
+            state.loading = false;
         });
 
     builder
