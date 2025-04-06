@@ -8,6 +8,8 @@ import {
 } from "@react-navigation/drawer";
 import Home from "./screens/Home";
 import ProductDetails from "./screens/ProductDetails";
+import PromotionDetails from "./screens/PromotionDetails";
+import NotificationCenter from "./screens/NotificationCenter";
 import Toast from "react-native-toast-message";
 import Cart from "./screens/Cart";
 import ConfirmOrder from "./screens/ConfirmOrder";
@@ -27,6 +29,7 @@ import AdminOrders from "./screens/Admin/AdminOrders";
 import UpdateProduct from "./screens/Admin/UpdateProduct";
 import NewProduct from "./screens/Admin/NewProduct";
 import ProductImages from "./screens/Admin/ProductImages";
+import ProductPromotions from "./screens/Admin/ProductPromotions";
 import Camera from "./screens/Camera";
 import { useDispatch, useSelector } from "react-redux";
 import { loadUser, logout } from "./redux/actions/userAction";
@@ -117,6 +120,15 @@ const DrawerContent = (props) => {
         />
       )}
       
+      {/* Show Notifications for both admin and user */}
+      {isAuthenticated && (
+        <DrawerItem
+          label="Notifications"
+          onPress={() => navigation.navigate("notificationcenter")}
+          labelStyle={{ color: colors.color2, fontWeight: "500" }}
+        />
+      )}
+      
       {/* Show Admin Dashboard for admin users */}
       {isAuthenticated && isAdmin && (
         <DrawerItem
@@ -176,6 +188,9 @@ const StackNavigator = () => {
       <Stack.Screen name="productimages" component={ProductImages} />
       <Stack.Screen name="products" component={Products} />
       <Stack.Screen name="orderdetails" component={OrderDetails} />
+      <Stack.Screen name="productpromotions" component={ProductPromotions} />
+      <Stack.Screen name="promotiondetails" component={PromotionDetails} />
+      <Stack.Screen name="notificationcenter" component={NotificationCenter} />
     </Stack.Navigator>
   );
 };

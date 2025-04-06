@@ -48,6 +48,7 @@ const ProductDetails = ({ route: { params } }) => {
 
   const isCarousel = useRef(null);
   const [quantity, setQuantity] = useState(1);
+  const [promoDiscount, setPromoDiscount] = useState(params?.discount || 0);
   const isOutOfStock = stock === 0;
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
@@ -56,6 +57,11 @@ const ProductDetails = ({ route: { params } }) => {
   const { user } = useSelector((state) => state.user);
   const { reviews, error: reviewError, loading: reviewLoading } = useSelector((state) => state.review);
   const average = useSelector((state) => state.review.averageRating);
+
+  // Calculate discounted price if there's a promotion
+  const discountedPrice = promoDiscount > 0 && price 
+    ? Math.round(price - (price * promoDiscount / 100)) 
+    : null;
 
   const incrementQty = () => {
     if (stock <= quantity)
@@ -76,22 +82,41 @@ const ProductDetails = ({ route: { params } }) => {
       navigate.navigate("login");
       return;
     }
+    
+    if (!name || !params?.id || price === undefined) {
+      Toast.show({
+        type: "error",
+        text1: "Product Error",
+        text2: "Product details not fully loaded"
+      });
+      return;
+    }
+    
     if (stock === 0)
       return Toast.show({
         type: "error",
         text1: "Out Of Stock",
       });
+    
+    // Use discounted price if promotion is active, with fallback to regular price
+    const finalPrice = (discountedPrice !== null && discountedPrice !== undefined) ? discountedPrice : price;
+    
+    // Ensure we have a valid image
+    const imageUrl = images && images.length > 0 ? images[0].url : null;
+    
     dispatch(addToCart({
       product: params.id,
       name,
-      price,
-      image: images[0]?.url,
+      price: finalPrice,
+      image: imageUrl,
       stock,
       quantity,
     }));
+    
     Toast.show({
       type: "success",
       text1: "Added To Cart",
+      text2: promoDiscount > 0 ? `With ${promoDiscount}% discount applied!` : undefined
     });
   };
 
@@ -201,6 +226,16 @@ const ProductDetails = ({ route: { params } }) => {
     });
   };
 
+  // Add a check to ensure product data is loaded before rendering
+  if (!name || price === undefined) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.color2 }}>
+        <ActivityIndicator size="large" color={colors.color3} />
+        <Text style={{ marginTop: 20, fontSize: 16 }}>Loading product details...</Text>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.color2 }}>
       <ScrollView
@@ -209,6 +244,33 @@ const ProductDetails = ({ route: { params } }) => {
         showsVerticalScrollIndicator={true}
       >
         <Header back={true} />
+
+        {/* Promotion Banner */}
+        {promoDiscount > 0 && (
+          <View
+            style={{
+              backgroundColor: colors.color1,
+              padding: 10,
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              borderBottomWidth: 1,
+              borderBottomColor: colors.color2 + "50",
+            }}
+          >
+            <Text
+              style={{
+                color: colors.color2,
+                fontWeight: "bold",
+                textAlign: "center",
+                fontSize: 16,
+              }}
+            >
+              🔥 SPECIAL OFFER: {promoDiscount}% OFF THIS ITEM 🔥
+            </Text>
+          </View>
+        )}
+
         <Carousel
           layout="default"
           sliderWidth={SLIDER_WIDTH}
@@ -230,7 +292,59 @@ const ProductDetails = ({ route: { params } }) => {
           <Text numberOfLines={2} style={{ fontSize: 25 }}>
             {name}
           </Text>
-          <Text style={{ fontSize: 18, fontWeight: "900" }}>₱{price}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            {promoDiscount > 0 ? (
+              <>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    marginRight: 8,
+                    textDecorationLine: "line-through",
+                    color: "#777",
+                  }}
+                >
+                  ₱{price?.toLocaleString() || "N/A"}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: "900",
+                    color: colors.color1,
+                  }}
+                >
+                  ₱{discountedPrice?.toLocaleString() || "N/A"}
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: colors.color1,
+                    padding: 5,
+                    borderRadius: 5,
+                    marginLeft: 10,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.color2,
+                      fontWeight: "700",
+                      fontSize: 12,
+                    }}
+                  >
+                    {promoDiscount}% OFF
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: "900",
+                }}
+              >
+                ₱{price?.toLocaleString() || "N/A"}
+              </Text>
+            )}
+          </View>
           <Text
             style={{ letterSpacing: 1, lineHeight: 20, marginVertical: 15 }}
             numberOfLines={8}

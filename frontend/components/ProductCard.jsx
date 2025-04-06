@@ -12,14 +12,32 @@ const ProductCard = ({
   addToCartHandler,
   i,
   navigate,
+  discount = 0,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  
+  // Calculate discounted price if there's a promotion
+  const discountedPrice = discount > 0 
+    ? Math.round(price - (price * discount / 100)) 
+    : null;
+
+  // Handle navigation based on whether there's a promotion
+  const handlePress = () => {
+    if (discount > 0) {
+      navigate.navigate("promotiondetails", { 
+        id,
+        discount 
+      });
+    } else {
+      navigate.navigate("productdetails", { id });
+    }
+  };
 
   return (
     <TouchableOpacity
       activeOpacity={1}
-      onPress={() => navigate.navigate("productdetails", { id })}
+      onPress={handlePress}
     >
       <View
         style={{
@@ -30,10 +48,37 @@ const ProductCard = ({
           margin: 5,
           marginBottom: 50,
           borderRadius: 10,
-          height:250,
+          height: 250,
           backgroundColor: colors.color2,
+          position: "relative",
         }}
       >
+        {/* Discount badge */}
+        {discount > 0 && (
+          <View
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              backgroundColor: colors.color1,
+              zIndex: 10,
+              padding: 5,
+              borderTopRightRadius: 10,
+              borderBottomLeftRadius: 10,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.color2,
+                fontWeight: "800",
+                fontSize: 12,
+              }}
+            >
+              {discount}% OFF
+            </Text>
+          </View>
+        )}
+
         {isLoading && (
           <View style={{
             position: 'absolute',
@@ -106,16 +151,40 @@ const ProductCard = ({
             {name}
           </Text>
 
-          <Text
-            numberOfLines={2}
-            style={{
-              color: colors.color3,
-              fontSize: 15,
-              fontWeight: 800,
-            }}
-          >
-            ₱{price}
-          </Text>
+          {discount > 0 ? (
+            <View>
+              <Text
+                style={{
+                  color: "#777",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textDecorationLine: "line-through",
+                }}
+              >
+                ₱{price}
+              </Text>
+              <Text
+                style={{
+                  color: colors.color1,
+                  fontSize: 15,
+                  fontWeight: 800,
+                }}
+              >
+                ₱{discountedPrice}
+              </Text>
+            </View>
+          ) : (
+            <Text
+              numberOfLines={2}
+              style={{
+                color: colors.color3,
+                fontSize: 15,
+                fontWeight: 800,
+              }}
+            >
+              ₱{price}
+            </Text>
+          )}
         </View>
 
         {stock > 0 ? (
@@ -128,9 +197,19 @@ const ProductCard = ({
               borderBottomLeftRadius: 10,
               width: "100%",
             }}
-            onPress={() => addToCartHandler(id, name, price, image, stock)}
+            onPress={() => 
+              addToCartHandler(
+                id, 
+                name, 
+                discount > 0 ? discountedPrice : price, 
+                image, 
+                stock
+              )
+            }
           >
-            <Button textColor={colors.color2}>Add To Cart</Button>
+            <Button textColor={colors.color2}>
+              {discount > 0 ? "Add With Discount" : "Add To Cart"}
+            </Button>
           </TouchableOpacity>
         ) : (
           <View

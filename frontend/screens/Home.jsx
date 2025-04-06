@@ -164,6 +164,13 @@ const Home = ({ route }) => {
         }
       })
     : products;
+    
+  // Create a list of promotional products with discounts
+  // For demonstration purposes, we'll apply discounts to some random products
+  const promotionalProducts = products.slice(0, 5).map(product => ({
+    ...product,
+    discount: Math.floor(Math.random() * 30) + 10 // Random discount between 10-40%
+  }));
 
   const renderCarouselItem = ({ item }) => (
     <TouchableOpacity
@@ -200,6 +207,7 @@ const Home = ({ route }) => {
             <Header
               showCartButton={false}
               showSearchButton={true}
+              showNotificationButton={true}
               onSearchButtonPress={() => setActiveSearch((prev) => !prev)}
             />
             
@@ -208,7 +216,7 @@ const Home = ({ route }) => {
               <TouchableOpacity
                 style={{
                   position: "absolute",
-                  right: 80,
+                  right: 20,
                   top: 20,
                   zIndex: 10,
                 }}
@@ -249,56 +257,58 @@ const Home = ({ route }) => {
             </View>
 
             {/* Category Buttons */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryContainer}
-              style={{ marginVertical: 10 }}
-            >
-              <TouchableOpacity
-                onPress={showAllProducts}
-                style={{
-                  backgroundColor:
-                    category === "" ? colors.color1 : colors.color5,
-                  borderRadius: 20,
-                  padding: 10,
-                  marginHorizontal: 5,
-                  marginVertical: 5,
-                }}
+            <View style={{ flexDirection: "row" }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ alignItems: "center" }}
               >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: category === "" ? colors.color2 : colors.color3,
-                  }}
-                >
-                  All
-                </Text>
-              </TouchableOpacity>
-              {categories.map((item) => (
                 <TouchableOpacity
-                  key={item._id}
-                  onPress={() => categoryButtonHandler(item._id)}
+                  onPress={() => categoryButtonHandler("")}
                   style={{
                     backgroundColor:
-                      category === item._id ? colors.color1 : colors.color5,
-                    borderRadius: 20,
-                    padding: 10,
-                    marginHorizontal: 5,
-                    marginVertical: 5,
+                      category === "" ? colors.color1 : colors.color5,
+                    borderRadius: 100,
+                    margin: 5,
                   }}
                 >
                   <Text
                     style={{
+                      color: category === "" ? colors.color2 : "gray",
+                      padding: 10,
+                      paddingHorizontal: 13,
                       fontSize: 12,
-                      color: category === item._id ? colors.color2 : colors.color3,
                     }}
                   >
-                    {item.category}
+                    All
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+
+                {categories.map((item) => (
+                  <TouchableOpacity
+                    onPress={() => categoryButtonHandler(item._id)}
+                    style={{
+                      backgroundColor:
+                        category === item._id ? colors.color1 : colors.color5,
+                      borderRadius: 100,
+                      margin: 5,
+                    }}
+                    key={item._id}
+                  >
+                    <Text
+                      style={{
+                        color: category === item._id ? colors.color2 : "gray",
+                        padding: 10,
+                        paddingHorizontal: 13,
+                        fontSize: 12,
+                      }}
+                    >
+                      {item.category}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
 
             {/* Price Range Buttons */}
             <ScrollView
@@ -409,8 +419,53 @@ const Home = ({ route }) => {
               </TouchableOpacity>
             </ScrollView>
 
+            {/* Promotions Section */}
+            {promotionalProducts.length > 0 && (
+              <View style={{marginTop: 20, marginBottom: 20}}>
+                <Heading text1="Special" text2="Offers" />
+                
+                <View style={{
+                  backgroundColor: colors.color1, 
+                  padding: 10, 
+                  borderRadius: 10,
+                  marginHorizontal: 5,
+                  marginBottom: 10
+                }}>
+                  <Text style={{
+                    color: colors.color2, 
+                    fontSize: 16, 
+                    textAlign: 'center',
+                    fontWeight: '700'
+                  }}>
+                    ✨ LIMITED TIME DISCOUNTS ✨
+                  </Text>
+                </View>
+                
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                >
+                  {promotionalProducts.map((item, index) => (
+                    <ProductCard
+                      key={item._id}
+                      id={item._id}
+                      i={index}
+                      name={item.name}
+                      price={item.price}
+                      stock={item.stock}
+                      image={item.images[0]?.url}
+                      addToCartHandler={addToCartHandler}
+                      navigate={navigate}
+                      discount={item.discount}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
             {/* Products */}
             <View style={styles.productContainer}>
+              <Heading text1="All" text2="Products" />
               {filteredProducts.length > 0 ? (
                 <FlatList
                   data={filteredProducts}

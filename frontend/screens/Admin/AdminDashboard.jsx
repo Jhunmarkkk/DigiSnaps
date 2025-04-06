@@ -53,7 +53,9 @@ const AdminDashboard = ({ navigation }) => {
       case "Products":
         navigation.navigate("products");
         break;
-
+      case "Promotions":
+        navigation.navigate("productpromotions");
+        break;
       default:
         navigation.navigate("adminorders");
         break;
@@ -115,6 +117,19 @@ const AdminDashboard = ({ navigation }) => {
                 <ButtonBox
                   icon={"view-list"}
                   text={"Categories"}
+                  handler={navigationHandler}
+                />
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  margin: 10,
+                  justifyContent: "center",
+                }}
+              >
+                <ButtonBox
+                  icon={"sale"}
+                  text={"Promotions"}
                   handler={navigationHandler}
                 />
               </View>
