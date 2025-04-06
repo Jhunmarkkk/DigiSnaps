@@ -5,6 +5,17 @@ import { server } from '../redux/store';
 import axios from 'axios';
 import { getToken } from './secureStore';
 
+// Global reference to handle navigation from notification
+let navigationRef = null;
+
+/**
+ * Sets the navigation reference for use with notifications
+ * @param {object} ref - Navigation reference from React Navigation
+ */
+export const setNavigationRef = (ref) => {
+  navigationRef = ref;
+};
+
 /**
  * Configure notification handling
  */
@@ -17,6 +28,38 @@ export const configureNotifications = () => {
       shouldSetBadge: true,
     }),
   });
+
+  // Set up notification listeners
+  const responseListener = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+  
+  // Return cleanup function
+  return () => {
+    Notifications.removeNotificationSubscription(responseListener);
+  };
+};
+
+/**
+ * Handle when a user taps on a notification
+ */
+const handleNotificationResponse = (response) => {
+  const data = response.notification.request.content.data;
+  
+  if (!navigationRef) {
+    console.log('Navigation reference not set, cannot navigate');
+    return;
+  }
+  
+  // Handle order notifications
+  if (data.screen === 'orders') {
+    // Navigate to orders screen
+    navigationRef.navigate('orders');
+    
+    // Show a toast or alert about the order update
+    if (data.status) {
+      // Your toast implementation here
+      console.log(`Order #${data.orderId} status: ${data.status}`);
+    }
+  }
 };
 
 /**

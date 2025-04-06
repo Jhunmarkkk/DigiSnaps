@@ -25,23 +25,7 @@ const Login = ({ navigation }) => {
 
   const submitHandler = async () => {
     setIsLoading(true);
-    
-    // Hardcoded admin credentials check
-    if (email === "admin@gmail.com" && password === "123456") {
-      try {
-        await dispatch(login(email, password));
-        // Will redirect to admin dashboard in the useEffect below
-      } catch (error) {
-        console.error("Login error:", error);
-      }
-    } else {
-      try {
-        await dispatch(login(email, password));
-      } catch (error) {
-        console.error("Login error:", error);
-      }
-    }
-    
+    await dispatch(login(email, password));
     setIsLoading(false);
   };
 
@@ -54,9 +38,9 @@ const Login = ({ navigation }) => {
       alert(message);
       dispatch({ type: "clearMessage" });
     }
-    if (isAuthenticated) {
-      // Check if this is the hardcoded admin account
-      if (email === "admin@gmail.com" && password === "123456") {
+    if (isAuthenticated && user) {
+      // Check if user is admin
+      if (user.role === "admin") {
         navigation.reset({
           index: 0,
           routes: [{ name: "admindashboard" }],
@@ -68,7 +52,7 @@ const Login = ({ navigation }) => {
         });
       }
     }
-  }, [error, message, isAuthenticated]);
+  }, [error, message, isAuthenticated, user]);
 
   return (
     <>

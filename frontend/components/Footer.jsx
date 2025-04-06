@@ -8,8 +8,11 @@ import { useSelector } from "react-redux";
 const Footer = ({ activeRoute = "home" }) => {
   const navigate = useNavigation();
 
-  const { loading, isAuthenticated } = useSelector((state) => state.user);
+  const { loading, isAuthenticated, user } = useSelector((state) => state.user);
   const { cartItems } = useSelector((state) => state.cart);
+  
+  // Check if user is admin
+  const isAdmin = user && user.role === "admin";
 
   const navigationHandler = (key) => {
     switch (key) {
@@ -20,8 +23,13 @@ const Footer = ({ activeRoute = "home" }) => {
         navigate.navigate("cart");
         break;
       case 2:
-        if (isAuthenticated) navigate.navigate("profile");
-        else navigate.navigate("login");
+        if (isAuthenticated) {
+          if (isAdmin) {
+            navigate.navigate("admindashboard");
+          } else {
+            navigate.navigate("profile");
+          }
+        } else navigate.navigate("login");
         break;
       default:
         navigate.navigate("home");
@@ -54,28 +62,33 @@ const Footer = ({ activeRoute = "home" }) => {
             justifyContent: "space-evenly",
           }}
         >
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => navigationHandler(0)}
-          >
-            <Avatar.Icon
-              {...avatarOptions}
-              icon={activeRoute === "home" ? "home" : "home-outline"}
-            />
-          </TouchableOpacity>
-          {isAuthenticated === true && (
-            
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => navigationHandler(1)}
-          >
-            <Badge style={styles.badge}><Text style={styles.text}>{cartItems.length}</Text></Badge>
-            <Avatar.Icon
-              {...avatarOptions}
-              icon={activeRoute === "cart" ? "cart" : "cart-outline"}
-            />
-          </TouchableOpacity>
+          {/* Only show Home icon for non-admin users */}
+          {!isAdmin && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigationHandler(0)}
+            >
+              <Avatar.Icon
+                {...avatarOptions}
+                icon={activeRoute === "home" ? "home" : "home-outline"}
+              />
+            </TouchableOpacity>
           )}
+          
+          {/* Only show Cart icon for authenticated non-admin users */}
+          {isAuthenticated && !isAdmin && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigationHandler(1)}
+            >
+              <Badge style={styles.badge}><Text style={styles.text}>{cartItems.length}</Text></Badge>
+              <Avatar.Icon
+                {...avatarOptions}
+                icon={activeRoute === "cart" ? "cart" : "cart-outline"}
+              />
+            </TouchableOpacity>
+          )}
+          
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => navigationHandler(2)}
@@ -85,6 +98,8 @@ const Footer = ({ activeRoute = "home" }) => {
               icon={
                 isAuthenticated === false
                   ? "login"
+                  : isAdmin
+                  ? "view-dashboard"
                   : activeRoute === "profile"
                   ? "account"
                   : "account-outline"

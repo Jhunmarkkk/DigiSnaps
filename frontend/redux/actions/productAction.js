@@ -1,6 +1,7 @@
 import axios from "axios";
 import { server } from "../store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getToken } from "../../utils/secureStore";
 
 export const getAllProducts = (keyword, category) => async (dispatch) => {
   try {
@@ -15,7 +16,7 @@ export const getAllProducts = (keyword, category) => async (dispatch) => {
     console.log("Fetching products from:", url);
     
     // Get authentication token for consistent behavior with admin endpoints
-    const token = await AsyncStorage.getItem('token');
+    const token = await getToken();
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
     
     const { data } = await axios.get(url, { headers });
@@ -48,7 +49,7 @@ export const getAdminProducts = () => async (dispatch) => {
       type: "getAdminProductsRequest",
     });
     
-    const token = await AsyncStorage.getItem('token');
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Authentication token not found. Please login again.");
@@ -58,7 +59,8 @@ export const getAdminProducts = () => async (dispatch) => {
     const { data } = await axios.get(`${server}/product/admin`, {
       headers: {
         'Authorization': `Bearer ${token}`
-      }
+      },
+      withCredentials: false
     });
     
     console.log(`Fetched ${data.products ? data.products.length : 0} admin products`);

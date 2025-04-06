@@ -30,12 +30,17 @@ const Profile = ({ navigation, route }) => {
   const isFocused = useIsFocused();
   const loading = useMessageAndErrorUser(navigation, dispatch, "home");
 
-  const logoutHandler = () => {
-    dispatch(logout());
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "home" }],
-    });
+  const logoutHandler = async () => {
+    // Dispatch logout action and wait for it to complete
+    await dispatch(logout());
+    
+    // Only reset navigation after logout is complete
+    setTimeout(() => {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "login" }],
+      });
+    }, 100);
   };
 
   const navigateHandler = (text) => {
@@ -161,11 +166,13 @@ const Profile = ({ navigation, route }) => {
                   justifyContent: "space-evenly",
                 }}
               >
-                <ButtonBox
-                  handler={navigateHandler}
-                  text={"Orders"}
-                  icon={"format-list-bulleted-square"}
-                />
+                {user?.role !== "admin" && (
+                  <ButtonBox
+                    handler={navigateHandler}
+                    text={"Orders"}
+                    icon={"format-list-bulleted-square"}
+                  />
+                )}
                 <ButtonBox
                   handler={navigateHandler}
                   text={"Sign Out"}

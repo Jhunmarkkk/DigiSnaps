@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
@@ -28,13 +28,14 @@ import NewProduct from "./screens/Admin/NewProduct";
 import ProductImages from "./screens/Admin/ProductImages";
 import Camera from "./screens/Camera";
 import { useDispatch, useSelector } from "react-redux";
-import { loadUser } from "./redux/actions/userAction";
+import { loadUser, logout } from "./redux/actions/userAction";
 import { View } from "react-native-animatable";
 import { Text, TouchableOpacity } from "react-native";
 import { Avatar } from "react-native-paper";
 import { colors, defaultImg } from "./styles/styles";
 import UpdateCategory from "./screens/Admin/UpdateCategory";
 import Products from "./screens/Admin/Products";
+import { configureNotifications, setNavigationRef } from './utils/notifications';
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +45,22 @@ const DrawerContent = (props) => {
   const { user, isAuthenticated } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const { navigation } = props;
+  
+  // Check if user is admin
+  const isAdmin = user && user.role === "admin";
+  
+  const handleLogout = async () => {
+    // Dispatch logout action and wait for it to complete
+    await dispatch(logout());
+    
+    // Only reset navigation after logout is complete
+    setTimeout(() => {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "login" }],
+      });
+    }, 100);
+  };
 
   return (
     <DrawerContentScrollView
@@ -54,8 +71,13 @@ const DrawerContent = (props) => {
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => {
-            if (isAuthenticated) navigation.navigate("profile");
-            else navigation.navigate("login");
+            if (isAuthenticated) {
+              if (isAdmin) {
+                navigation.navigate("admindashboard");
+              } else {
+                navigation.navigate("profile");
+              }
+            } else navigation.navigate("login");
           }}
         >
           <Avatar.Image
@@ -76,15 +98,38 @@ const DrawerContent = (props) => {
         </TouchableOpacity>
       </View>
 
-      <DrawerItem
-        label="Home"
-        onPress={() => navigation.navigate("home")}
-        labelStyle={{ color: colors.color2, fontWeight: "500" }}
-      />
-      {isAuthenticated && (
+      {/* Only show Home for non-admin users */}
+      {(!isAdmin) && (
+        <DrawerItem
+          label="Home"
+          onPress={() => navigation.navigate("home")}
+          labelStyle={{ color: colors.color2, fontWeight: "500" }}
+        />
+      )}
+      
+      {/* Only show Orders for authenticated non-admin users */}
+      {isAuthenticated && !isAdmin && (
         <DrawerItem
           label="My Orders"
           onPress={() => navigation.navigate("orders")}
+          labelStyle={{ color: colors.color2, fontWeight: "500" }}
+        />
+      )}
+      
+      {/* Show Admin Dashboard for admin users */}
+      {isAuthenticated && isAdmin && (
+        <DrawerItem
+          label="Admin Dashboard"
+          onPress={() => navigation.navigate("admindashboard")}
+          labelStyle={{ color: colors.color2, fontWeight: "500" }}
+        />
+      )}
+      
+      {/* Show logout option for authenticated users */}
+      {isAuthenticated && (
+        <DrawerItem
+          label="Logout"
+          onPress={handleLogout}
           labelStyle={{ color: colors.color2, fontWeight: "500" }}
         />
       )}
@@ -93,11 +138,16 @@ const DrawerContent = (props) => {
 };
 
 const StackNavigator = () => {
-  const { isAuthenticated } = useSelector((state) => state.user);
+  const { isAuthenticated, user } = useSelector((state) => state.user);
+  const isAdmin = user && user.role === "admin";
+
+  // Determine the initial route based on authentication and role
+  const initialRoute = !isAuthenticated ? "login" : 
+                       isAdmin ? "admindashboard" : "home";
 
   return (
     <Stack.Navigator
-      initialRouteName={isAuthenticated ? "home" : "login"}
+      initialRouteName={initialRoute}
       screenOptions={{
         headerShown: false,
       }}
@@ -131,15 +181,36 @@ const StackNavigator = () => {
 const Main = () => {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state) => state.user);
+  const isAdmin = user && user.role === "admin";
+  const navigationRef = useRef(null);
 
   useEffect(() => {
     dispatch(loadUser());
+    
+    // Configure push notifications
+    const unsubscribe = configureNotifications();
+    
+    return () => {
+      // Clean up notification listeners
+      if (unsubscribe) unsubscribe();
+    };
   }, [dispatch]);
 
+  const getInitialRoute = () => {
+    if (!isAuthenticated) return "login";
+    if (isAdmin) return "admindashboard";
+    return "home";
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer 
+      ref={(ref) => {
+        navigationRef.current = ref;
+        setNavigationRef(ref);
+      }}
+    >
       <Drawer.Navigator
-        initialRouteName={isAuthenticated ? "home" : "login"}
+        initialRouteName={getInitialRoute()}
         drawerContent={(props) => <DrawerContent {...props} />}
       >
         <Drawer.Screen name=" " component={StackNavigator} />

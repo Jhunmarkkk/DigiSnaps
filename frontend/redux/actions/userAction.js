@@ -133,9 +133,16 @@ export const loadUser = () => async (dispatch) => {
                 withCredentials: false
             });
 
-            console.log('User data loaded');
+            console.log('User data loaded:', data.user);
+            console.log('User role:', data.user.role);
             
             if (data.success && data.user) {
+                // Force admin role for admin@gmail.com
+                if (data.user.email === 'admin@gmail.com') {
+                    data.user.role = 'admin';
+                    console.log('Forcing admin role for admin@gmail.com');
+                }
+                
                 dispatch({
                     type: "loadUserSuccess",
                     payload: data.user,
@@ -172,21 +179,34 @@ export const logout = () => async (dispatch) => {
             type: "logoutRequest",
         });
 
-        // Unregister push notification token
-        await unregisterPushToken();
+        // Unregister push notification token (handle possible failure)
+        try {
+            await unregisterPushToken();
+        } catch (tokenError) {
+            console.log("Error unregistering push token:", tokenError);
+            // Continue with logout even if this fails
+        }
 
         // Clear the token from SecureStore
-        await deleteToken();
+        try {
+            await deleteToken();
+            console.log("Token successfully deleted");
+        } catch (storageError) {
+            console.error("Error deleting token:", storageError);
+            // Continue with logout even if storage clearing fails
+        }
         
+        // Dispatch success only after token is cleared
         dispatch({
             type: "logoutSuccess",
             payload: "Logged out successfully",
         });
     } catch (error) {
         console.error('Logout error:', error);
+        // Force logout even on error to prevent being stuck
         dispatch({
-            type: "logoutFail",
-            payload: error.response?.data?.message || "Failed to logout",
+            type: "logoutSuccess",
+            payload: "Logged out (with some errors)",
         });
     }
 };

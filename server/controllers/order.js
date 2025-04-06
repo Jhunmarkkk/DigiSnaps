@@ -3,6 +3,7 @@ import { Order } from "../models/order.js";
 import { Product } from "../models/product.js";
 import ErrorHandler from "../utils/error.js";
 import { sendEmail } from "../utils/features.js";
+import { sendPushNotificationToUser } from "../utils/sendPushNotification.js";
 
 export const createOrder = asyncError(async (req, res, next) => {
   const {
@@ -124,13 +125,37 @@ export const proccessOrder = asyncError(async (req, res, next) => {
   const order = await Order.findById(req.params.id);
   if (!order) return next(new ErrorHandler("Order Not Found", 404));
 
-  if (order.orderStatus === "Preparing") order.orderStatus = "Shipped";
+  const oldStatus = order.orderStatus;
+  let newStatus;
+
+  if (order.orderStatus === "Preparing") {
+    newStatus = "Shipped";
+    order.orderStatus = newStatus;
+  }
   else if (order.orderStatus === "Shipped") {
-    order.orderStatus = "Delivered";
+    newStatus = "Delivered";
+    order.orderStatus = newStatus;
     order.deliveredAt = new Date(Date.now());
   } else return next(new ErrorHandler("Order Already Delivered", 400));
 
   await order.save();
+
+  // Send push notification to user about order status update
+  try {
+    await sendPushNotificationToUser(order.user, {
+      title: "Order Status Updated",
+      body: `Your order #${order._id} has been ${newStatus.toLowerCase()}!`,
+      data: { 
+        screen: 'orders',
+        orderId: order._id.toString(),
+        status: newStatus
+      }
+    });
+    console.log(`Push notification sent to user for order ${order._id} status update to ${newStatus}`);
+  } catch (error) {
+    console.error("Error sending order status notification:", error);
+    // Continue processing even if notification fails
+  }
 
   res.status(200).json({
     success: true,
