@@ -36,6 +36,7 @@ const Review = ({ productId }) => {
 
   useEffect(() => {
     if (error) {
+      console.error("Error in review component:", error);
       showToast("error", error);
       dispatch({ type: "clearError" });
     }
@@ -70,16 +71,25 @@ const Review = ({ productId }) => {
       return;
     }
 
+    if (!productId) {
+      console.error("Missing productId for review");
+      showToast("error", "Product ID is missing");
+      return;
+    }
+
     try {
-      console.log("Adding review with user:", user._id);
-      console.log("Adding review for product:", productId);
-      console.log("Rating:", rating);
-      console.log("Comment:", comment);
+      console.log("Adding review with data:", {
+        user: user._id,
+        productId,
+        rating,
+        comment
+      });
       
-      dispatch(addReview(comment, rating, productId));
+      const result = await dispatch(addReview(comment, rating, productId));
+      console.log("Review submission result:", result);
     } catch (error) {
       console.error("Error adding review:", error);
-      showToast("error", "Failed to add review");
+      showToast("error", "Failed to add review: " + (error.message || "Unknown error"));
     }
   };
 

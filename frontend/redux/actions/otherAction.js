@@ -78,17 +78,38 @@ export const updatePic = (formData) => async (dispatch) => {
       type: "updatePicRequest",
     });
 
-    const { data } = await axios.put(`${server}/user/updatepicture`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    // Get token from SecureStore
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
+    console.log("Updating profile picture with token:", token ? "Token exists" : "No token");
+    
+    const { data } = await axios.put(
+      `${server}/user/updatepic`, 
+      formData, 
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "Authorization": `Bearer ${token}`
+        },
+        withCredentials: false
+      }
+    );
 
     dispatch({
       type: "updatePicSuccess",
       payload: data.message,
     });
   } catch (error) {
+    console.error("Update profile picture error:", error);
+    if (error.response) {
+      console.error("Error response:", error.response.data);
+      console.error("Status code:", error.response.status);
+    }
+    
     dispatch({
       type: "updatePicFail",
       payload: error.response?.data?.message || "Failed to update profile picture",

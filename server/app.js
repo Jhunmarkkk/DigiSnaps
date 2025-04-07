@@ -17,7 +17,19 @@ app.use(
     cors({
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE"],
-      origin: ["http:// 192.168.1.7:19000", "http:// 192.168.1.7:19001", "http:// 192.168.1.7:19002", "exp:// 192.168.1.7:19000", "http://localhost:19000", "http://localhost:19001", "http://localhost:19002"],
+      origin: [
+        "http://192.168.43.161:19000", 
+        "http://192.168.43.161:19001", 
+        "http://192.168.43.161:19002", 
+        "exp://192.168.43.161:19000",
+        "http://localhost:19000", 
+        "http://localhost:19001", 
+        "http://localhost:19002",
+        "http://10.0.2.2:19000",
+        "http://10.0.2.2:19001",
+        "exp://10.0.2.2:19000",
+        "*"  // Allow all origins for testing
+      ],
     })
   );
 

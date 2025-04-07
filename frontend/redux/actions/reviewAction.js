@@ -1,6 +1,7 @@
 import axios from "axios";
 import { server } from "../store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getToken } from "../../utils/secureStore";
 
 export const getAllReviews = (id) => async (dispatch) => {
   try {
@@ -78,10 +79,13 @@ export const addReview = (comment, rating, productId) => async (dispatch, getSta
   try {
     dispatch({ type: "addReviewRequest" });
     
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    console.log("Starting review submission process");
+    
+    // Get token from SecureStore instead of AsyncStorage
+    const token = await getToken();
     
     if (!token) {
+      console.error("No authentication token found");
       throw new Error("Authentication token not found. Please login again.");
     }
     
@@ -89,7 +93,24 @@ export const addReview = (comment, rating, productId) => async (dispatch, getSta
     const { user } = getState().user;
     
     if (!user || !user._id) {
+      console.error("No user found in state:", user);
       throw new Error("User not logged in or user ID not found");
+    }
+    
+    // Validate parameters
+    if (!productId) {
+      console.error("Missing product ID for review");
+      throw new Error("Product ID is required");
+    }
+    
+    if (!comment || comment.trim() === '') {
+      console.error("Missing comment for review");
+      throw new Error("Comment is required");
+    }
+    
+    if (!rating || rating < 1 || rating > 5) {
+      console.error("Invalid rating for review:", rating);
+      throw new Error("Rating must be between 1 and 5");
     }
     
     const reviewData = {
@@ -100,6 +121,8 @@ export const addReview = (comment, rating, productId) => async (dispatch, getSta
     };
     
     console.log("Adding review with data:", reviewData);
+    console.log("API URL:", `${server}/review/create`);
+    console.log("Token:", token ? "Token exists" : "No token");
     
     const response = await axios.post(
       `${server}/review/create`,
@@ -109,13 +132,17 @@ export const addReview = (comment, rating, productId) => async (dispatch, getSta
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        withCredentials: false
+        withCredentials: false,
+        timeout: 10000 // 10 seconds timeout
       }
     );
     
     console.log("Review added successfully:", response.data);
     
-    dispatch({ type: "addReviewSuccess" });
+    dispatch({ 
+      type: "addReviewSuccess", 
+      payload: response.data.message || "Review added successfully" 
+    });
     
     // Refresh reviews and ratings after successfully adding a review
     dispatch(getAllReviews(productId));
@@ -124,10 +151,28 @@ export const addReview = (comment, rating, productId) => async (dispatch, getSta
     return response.data;
   } catch (error) {
     console.error("Error adding review:", error);
+    
+    // Log detailed error information
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error("Error response data:", error.response.data);
+      console.error("Error response status:", error.response.status);
+      console.error("Error response headers:", error.response.headers);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error("Error request:", error.request);
+    } else {
+      // Something happened in setting up the request
+      console.error("Error message:", error.message);
+    }
+    
     dispatch({ 
       type: "addReviewFail", 
-      payload: error.response?.data?.message || "Failed to add review" 
+      payload: error.response?.data?.message || error.message || "Failed to add review" 
     });
+    
+    throw error; // Re-throw the error so the component can handle it
   }
 };
 
@@ -182,8 +227,8 @@ export const deleteReview = (reviewId) => async (dispatch) => {
   try {
     dispatch({ type: "deleteReviewRequest" });
     
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
+    // Get token from SecureStore instead of AsyncStorage
+    const token = await getToken();
     
     if (!token) {
       throw new Error("Authentication token not found. Please login again.");

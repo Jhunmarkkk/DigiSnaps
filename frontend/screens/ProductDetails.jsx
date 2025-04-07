@@ -171,20 +171,37 @@ const ProductDetails = ({ route: { params } }) => {
   // Component to render each review item
   const renderReviewItem = ({ item, index }) => {
     console.log(`Rendering review ${index}:`, item);
+    
+    // Determine if the current user owns this review for delete button visibility
+    const isReviewOwner = user && (
+      (typeof item.user === 'string' && user._id === item.user) ||
+      (typeof item.user === 'object' && user._id === item.user?._id) ||
+      (typeof item.user === 'string' && typeof user._id === 'string' && 
+        item.user.toString() === user._id.toString())
+    );
+    
     return (
       <View style={style.reviewItem}>
         <Text style={{ fontWeight: "bold", color: "black" }}>
-          User: {item.user ? item.user : "Anonymous"}
+          User: {typeof item.user === 'object' && item.user.name 
+            ? item.user.name 
+            : (item.user ? item.user : "Anonymous")}
         </Text>
         <Text>
           <Text style={{ fontWeight: "bold" }}>Rating:</Text> {item.rating}/5
         </Text>
-        <Text>
+        <Text style={style.reviewComment}>
           <Text style={{ fontWeight: "bold" }}>Comment:</Text> {item.comment}
         </Text>
-        {user && item.user === user._id && (
-          <TouchableOpacity onPress={() => handleDeleteReview(item._id)}>
-            <Text style={style.deleteButton}>Delete Comment</Text>
+        <Text style={style.reviewDate}>
+          {new Date(item.createdAt).toLocaleString()}
+        </Text>
+        {isReviewOwner && (
+          <TouchableOpacity 
+            onPress={() => handleDeleteReview(item._id)}
+            style={style.deleteButtonContainer}
+          >
+            <Text style={style.deleteButton}>Delete Review</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -199,6 +216,21 @@ const ProductDetails = ({ route: { params } }) => {
       // Create a unique key for each review
       const reviewKey = item._id || `review-${index}`;
       console.log(`Rendering review ${index} with ID ${reviewKey}`);
+      
+      // Determine if the current user owns this review for delete button visibility
+      const isReviewOwner = user && (
+        (typeof item.user === 'string' && user._id === item.user) ||
+        (typeof item.user === 'object' && user._id === item.user?._id) ||
+        (typeof item.user === 'string' && typeof user._id === 'string' && 
+          item.user.toString() === user._id.toString())
+      );
+      
+      console.log("Review user check:", {
+        reviewId: item._id,
+        reviewOwner: item.user,
+        currentUser: user?._id,
+        isOwner: isReviewOwner
+      });
       
       return (
         <View key={reviewKey} style={style.reviewItem}>
@@ -216,9 +248,12 @@ const ProductDetails = ({ route: { params } }) => {
           <Text style={style.reviewDate}>
             {new Date(item.createdAt).toLocaleString()}
           </Text>
-          {user && (user._id === item.user || user._id === item.user?._id) && (
-            <TouchableOpacity onPress={() => handleDeleteReview(item._id)}>
-              <Text style={style.deleteButton}>Delete Comment</Text>
+          {isReviewOwner && (
+            <TouchableOpacity 
+              onPress={() => handleDeleteReview(item._id)}
+              style={style.deleteButtonContainer}
+            >
+              <Text style={style.deleteButton}>Delete Review</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -503,74 +538,73 @@ const style = StyleSheet.create({
     padding: 5,
     marginVertical: 35,
   },
-  reviewItem: {
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "#eaeaea",
-  },
-  deleteButton: {
-    color: "red",
-    fontWeight: "900",
-    marginTop: 8,
-    textAlign: "right",
-  },
   ratingContainer: {
-    marginVertical: 15,
-    padding: 10,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderColor: "#e0e0e0",
+    paddingTop: 20,
+  },
+  reviewsContainer: {
+    marginTop: 10,
+  },
+  reviewItem: {
+    backgroundColor: "#f9f9f9",
+    padding: 15,
+    borderRadius: 5,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  reviewComment: {
+    marginVertical: 5,
+  },
+  reviewDate: {
+    color: "#888",
+    fontSize: 12,
+    marginTop: 5,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    marginTop: 20,
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#888",
+    marginTop: 5,
   },
   loadingContainer: {
-    padding: 20,
     alignItems: "center",
+    marginTop: 20,
+    padding: 20,
   },
   loadingText: {
     marginTop: 10,
-    color: colors.color3,
-  },
-  emptyContainer: {
-    padding: 20,
-    alignItems: "center",
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  emptyText: {
     fontSize: 16,
-    fontWeight: "bold",
-  },
-  emptySubtext: {
-    marginTop: 5,
-    color: "gray",
+    color: "#666",
   },
   reviewCountText: {
     fontSize: 16,
-    fontWeight: "bold",
     marginBottom: 10,
-    color: colors.color3,
+    color: "#555",
   },
-  reviewComment: {
-    marginTop: 5,
+  deleteButtonContainer: {
+    marginTop: 10,
+    alignItems: "flex-end",
   },
-  reviewDate: {
-    marginTop: 5,
-    color: "gray",
-  },
-  reviewsContainer: {
-    marginBottom: 30,
-    padding: 10,
+  deleteButton: {
+    color: colors.color1,
+    fontSize: 14,
+    fontWeight: "bold",
+    padding: 8,
+    borderRadius: 5,
     backgroundColor: "#f0f0f0",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+    alignSelf: "flex-end",
   },
 });
 
