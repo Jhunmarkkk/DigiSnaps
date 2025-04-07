@@ -1,6 +1,11 @@
-import { server } from "../store";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { server } from "../store";
+import Constants from 'expo-constants';
+
+
+// Check if we're running in Expo Go
+const isExpoGo = Constants.appOwnership === 'expo';
 
 export const register = (formData) => async (dispatch) => {
     try {
@@ -248,7 +253,7 @@ export const loadUser = () => async (dispatch) => {
     }
 };
 
-export const logout = (forceNewGoogleLogin = false) => async (dispatch) => {
+export const logout = () => async (dispatch) => {
     try {
         dispatch({
             type: "logoutRequest",
@@ -256,16 +261,6 @@ export const logout = (forceNewGoogleLogin = false) => async (dispatch) => {
 
         // Clear the token from AsyncStorage
         await AsyncStorage.removeItem('token');
-        
-        // If we want to force a new Google login on next attempt
-        if (forceNewGoogleLogin) {
-            console.log('Setting flag to force new Google login on next attempt');
-            await AsyncStorage.setItem('forceNewGoogleLogin', 'true');
-            
-            // Clear other Google-related data
-            await AsyncStorage.removeItem('googleAuth');
-            await AsyncStorage.removeItem('googleCredentials');
-        }
         
         dispatch({
             type: "logoutSuccess",
@@ -280,161 +275,190 @@ export const logout = (forceNewGoogleLogin = false) => async (dispatch) => {
     }
 };
 
-export const googleLogin = (idToken, userInfo) => async (dispatch) => {
-    try {
-        dispatch({ type: "loginRequest" });
-
-        console.log("Making Google login request to:", `${server}/user/google-login`);
-        console.log("With data:", { idToken, userInfo });
-
-        if (!userInfo) {
-            throw new Error("No user info provided from Google");
-        }
-        
-        // API call to backend for Google login
-        try {
-            const { data } = await axios.post(
-                `${server}/user/google-login`,
-                { 
-                    idToken, 
-                    userInfo
-                },
-                { 
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    withCredentials: false,
-                    timeout: 10000 // 10 second timeout
-                }
-            );
-
-            console.log("Google login response:", data);
-
-            // Store token after successful login
-            if (data.token) {
-                await AsyncStorage.setItem('token', data.token);
-                console.log('Token stored successfully');
-                
-                // Save user data for potential restoration
-                if (data.user) {
-                    await AsyncStorage.setItem('googleUserData', JSON.stringify(data.user));
-                    await AsyncStorage.setItem('googleRawUserData', JSON.stringify(userInfo));
-                    
-                    // Store credentials info for potential session restoration
-                    const tokenData = {
-                        token: data.token,
-                        email: userInfo.email,
-                        timestamp: Date.now()
-                    };
-                    await AsyncStorage.setItem('googleCredentials', JSON.stringify(tokenData));
-                } else {
-                    console.warn('No user data received from server, using fallback data');
-                    // Create a fallback user object
-                    const fallbackUser = {
-                        _id: userInfo.id || 'google-' + Date.now(),
-                        name: userInfo.name || 'Google User',
-                        email: userInfo.email || '',
-                        avatar: { url: userInfo.photo || '' },
-                        role: 'user'
-                    };
-                    
-                    // Store fallback data
-                    await AsyncStorage.setItem('googleUserData', JSON.stringify(fallbackUser));
-                    await AsyncStorage.setItem('googleRawUserData', JSON.stringify(userInfo));
-                    
-                    // Store credentials
-                    const tokenData = {
-                        token: data.token,
-                        email: userInfo.email,
-                        timestamp: Date.now()
-                    };
-                    await AsyncStorage.setItem('googleCredentials', JSON.stringify(tokenData));
-                    
-                    // Update the data.user value for the loadUserSuccess dispatch
-                    data.user = fallbackUser;
-                }
-            }
-
-            dispatch({ 
-                type: "loginSuccess", 
-                payload: data.message || "Google login successful" 
-            });
-            
-            // Load user data immediately after login
-            if (data.user) {
-                dispatch({
-                    type: "loadUserSuccess",
-                    payload: data.user
-                });
-            } else {
-                dispatch(loadUser());
-            }
-            
-            return { success: true, data };
-        } catch (apiError) {
-            console.error('API error during Google login:', apiError);
-            throw apiError; // Re-throw to trigger fallback
-        }
-    } catch (error) {
-        console.error('Google login error:', error);
-        
-        // Create a fallback user for offline login
-        console.log("Creating fallback user from Google data");
-        try {
-            if (!userInfo) {
-                throw new Error("No user info available for fallback");
-            }
-            
-            const fallbackUser = {
-                _id: userInfo.id || 'google-' + Date.now(),
-                name: userInfo.name || 'Google User',
-                email: userInfo.email || '',
-                avatar: { url: userInfo.photo || '' },
-                role: 'user'
-            };
-            
-            console.log("Fallback user:", fallbackUser);
-            
-            // Store the fallback user in AsyncStorage for persistence
-            await AsyncStorage.setItem('googleUserData', JSON.stringify(fallbackUser));
-            console.log('Stored fallback user data for persistence');
-            
-            // Generate a mock token
-            const mockToken = 'google_mock_' + Date.now();
-            await AsyncStorage.setItem('token', mockToken);
-            console.log('Created mock token:', mockToken);
-            
-            // Store credentials for session restoration
-            const tokenData = {
-                token: mockToken,
-                mockToken: mockToken,
-                email: userInfo.email,
-                timestamp: Date.now()
-            };
-            await AsyncStorage.setItem('googleCredentials', JSON.stringify(tokenData));
-            
-            // Dispatch directly to the store
-            dispatch({
-                type: "loadUserSuccess",
-                payload: fallbackUser
-            });
-            
-            dispatch({
-                type: "loginSuccess",
-                payload: "Signed in with Google (offline mode)"
-            });
-            
-            return { success: true, fallback: true };
-        } catch (fallbackError) {
-            console.error('Fallback creation error:', fallbackError);
-            
-            dispatch({ 
-                type: "loginFail", 
-                payload: "Failed to create fallback Google account: " + fallbackError.message
-            });
-        }
-        
-        return { success: false, error: error.message };
+export const googleLogin = (idToken, userData) => async (dispatch) => {
+  try {
+    dispatch({ type: "loginRequest" });
+    
+    console.log("googleLogin action started with data:", userData?.email);
+    
+    // Ensure userData is valid
+    if (!userData) {
+      userData = {
+        id: `unknown_${Date.now()}`,
+        name: 'Google User',
+        email: 'unknown@example.com',
+        photo: ''
+      };
+      console.warn("Created default userData due to missing data");
+    } else if (!userData.email) {
+      console.error("Invalid user data received:", userData);
+      // Create a safer version with defaults
+      userData = {
+        ...userData,
+        id: userData.id || `unknown_${Date.now()}`,
+        name: userData.name || 'Google User',
+        email: 'unknown@example.com',
+        photo: userData.photo || ''
+      };
+      console.warn("Fixed incomplete userData with defaults");
     }
+    
+    // Create the payload with the exact fields the backend expects
+    const payload = {
+      email: userData.email,
+      name: userData.name || userData.email.split('@')[0],
+      googleId: userData.id,
+      photo: userData.photo // Use 'photo' instead of 'avatar' to match what we extract from Google
+    };
+    
+    console.log("Sending Google login request with payload:", JSON.stringify(payload));
+    
+    // First attempt to authenticate with the backend
+    try {
+      const { data } = await axios.post(
+        `${server}/user/google-login`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json"
+          },
+          timeout: 10000 // 10 second timeout
+        }
+      );
+      
+      console.log("Backend Google login successful");
+      
+      // Store the token from backend response
+      if (data.token) {
+        await AsyncStorage.setItem("token", data.token);
+        console.log("Stored authentication token");
+        
+        // Save the user data for potential restoration
+        if (data.user) {
+          await AsyncStorage.setItem("userData", JSON.stringify(data.user));
+          
+          // Also store in googleUserData for consistency
+          await AsyncStorage.setItem("googleUserData", JSON.stringify(data.user));
+          
+          // Store raw data for reference
+          const safeRawData = {
+            id: userData.id || 'unknown',
+            name: userData.name || 'Google User',
+            email: userData.email || 'unknown@example.com',
+            photo: userData.photo || ''
+          };
+          await AsyncStorage.setItem("googleRawUserData", JSON.stringify(safeRawData));
+          
+          // Create credentials
+          const tokenData = {
+            token: data.token,
+            email: userData.email,
+            timestamp: Date.now()
+          };
+          await AsyncStorage.setItem("googleCredentials", JSON.stringify(tokenData));
+        }
+        
+        dispatch({ type: "loginSuccess", payload: data.user });
+        return data;
+      } else {
+        console.warn("No token received from backend");
+        throw new Error("No authentication token received");
+      }
+    } catch (backendError) {
+      console.error("Backend Google login failed:", backendError);
+      
+      // Log detailed error information
+      if (backendError.response) {
+        console.log("Status:", backendError.response.status);
+        console.log("Error data:", JSON.stringify(backendError.response.data));
+      } else if (backendError.request) {
+        console.log("No response received:", backendError.request);
+      } else {
+        console.log("Error setting up request:", backendError.message);
+      }
+      
+      // For Expo Go or fallback, create mock token and use local authentication
+      if (Constants.appOwnership === 'expo' || !backendError.response) {
+        console.log("Using fallback authentication for Google login");
+        
+        // Create local user from Google data
+        const user = {
+          _id: `google_${userData.id || Date.now()}`,
+          name: userData.name || "Google User",
+          email: userData.email,
+          avatar: { url: userData.photo || "" },
+          role: "user"
+        };
+        
+        // Create and store a mock token
+        const mockToken = `google_mock_${Date.now()}`;
+        await AsyncStorage.setItem("token", mockToken);
+        
+        // Store user data in multiple places for redundancy
+        await AsyncStorage.setItem("userData", JSON.stringify(user));
+        await AsyncStorage.setItem("googleUserData", JSON.stringify(user));
+        
+        // Store raw data for reference
+        const safeRawData = {
+          id: userData.id || 'unknown',
+          name: userData.name || 'Google User',
+          email: userData.email || 'unknown@example.com',
+          photo: userData.photo || ''
+        };
+        await AsyncStorage.setItem("googleRawUserData", JSON.stringify(safeRawData));
+        
+        // Create credentials
+        const tokenData = {
+          mockToken: mockToken,
+          email: userData.email,
+          timestamp: Date.now()
+        };
+        await AsyncStorage.setItem("googleCredentials", JSON.stringify(tokenData));
+        
+        dispatch({ type: "loginSuccess", payload: user });
+        return { user, token: mockToken };
+      }
+      
+      // Re-throw for real errors that should be handled
+      throw backendError;
+    }
+  } catch (error) {
+    console.error("Google login action error:", error);
+    dispatch({ 
+      type: "loginFail", 
+      payload: error.response?.data?.message || "Google login failed" 
+    });
+    
+    // For Expo Go, we want to continue even if backend fails
+    if (Constants.appOwnership === 'expo') {
+      console.log("EXPO GO: Creating fallback user despite error");
+      const user = {
+        _id: `google_${userData?.id || Date.now()}`,
+        name: userData?.name || "Google User",
+        email: userData?.email || "unknown@example.com",
+        avatar: { url: userData?.photo || "" },
+        role: "user"
+      };
+      
+      const mockToken = `google_mock_${Date.now()}`;
+      await AsyncStorage.setItem("token", mockToken);
+      await AsyncStorage.setItem("userData", JSON.stringify(user));
+      await AsyncStorage.setItem("googleUserData", JSON.stringify(user));
+      
+      // Store raw data for reference
+      const safeRawData = {
+        id: userData?.id || 'unknown',
+        name: userData?.name || 'Google User',
+        email: userData?.email || 'unknown@example.com',
+        photo: userData?.photo || ''
+      };
+      await AsyncStorage.setItem("googleRawUserData", JSON.stringify(safeRawData));
+      
+      dispatch({ type: "loginSuccess", payload: user });
+      return { user, token: mockToken, fallback: true };
+    }
+    
+    throw error;
+  }
 };
 

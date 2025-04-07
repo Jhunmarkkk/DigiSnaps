@@ -23,7 +23,9 @@ export const store = configureStore({
 // 3. Check that no firewall is blocking connections to this port
 
 // For development build, try different connection methods
-const SERVER_IP = "192.168.246.228"; // Replace with your computer's IP address
+// Use your actual local network IP address, not 192.168.176.228
+// You can find your IP by running 'ipconfig' on Windows or 'ifconfig' on Mac/Linux
+const SERVER_IP = "192.168.176.228"; // Update this to your computer's current IP address
 const SERVER_PORT = 5000;
 
 // Try IP address first, then localhost if IP fails

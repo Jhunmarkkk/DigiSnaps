@@ -232,16 +232,63 @@ export const getCurrentUserInfo = async () => {
 
 // Sign in with Google
 export const signInWithGoogle = async () => {
-  // Return error if running in Expo Go
+  console.log('Starting Google Sign-In process...');
+  
+  // For Expo Go testing, provide mock data
   if (isExpoGo) {
-    return { 
-      success: false, 
-      error: { 
-        message: 'Google Sign-In is not available in Expo Go. Please use a development build.' 
-      } 
+    console.log('Running in Expo Go - providing mock data');
+    
+    // Create mock user data
+    const mockUserData = {
+      id: 'google_' + Date.now(),
+      name: 'Test User',
+      email: 'test.user@example.com',
+      photo: 'https://ui-avatars.com/api/?name=Test+User&background=random',
     };
+    
+    // Store mock data for persistence
+    try {
+      await AsyncStorage.setItem('googleRawUserData', JSON.stringify(mockUserData));
+      console.log('Stored mock Google user data');
+      
+      const tokenData = {
+        mockToken: `google_mock_${Date.now()}`,
+        email: mockUserData.email,
+        timestamp: Date.now()
+      };
+      await AsyncStorage.setItem('googleCredentials', JSON.stringify(tokenData));
+      
+      // Import the action dynamically to avoid circular dependencies
+      try {
+        const { googleLogin } = require('../redux/actions/userAction');
+        console.log('Dispatching mock Google login...');
+        
+        if (typeof googleLogin !== 'function') {
+          console.error('googleLogin is not a function:', googleLogin);
+          throw new Error('Google login action not available');
+        }
+        
+        await store.dispatch(googleLogin(null, mockUserData));
+        return { success: true, mock: true };
+      } catch (dispatchError) {
+        console.error('Error dispatching mock Google login:', dispatchError);
+        return { 
+          success: false, 
+          error: { message: 'Failed to process mock Google login' },
+          mock: true
+        };
+      }
+    } catch (storageError) {
+      console.error('Error storing mock data:', storageError);
+      return { 
+        success: false, 
+        error: { message: 'Error storing mock data' },
+        mock: true
+      };
+    }
   }
   
+  // Real Google Sign-In logic for development builds
   try {
     // Check for Play Services
     console.log('Checking Play Services...');
@@ -257,6 +304,7 @@ export const signInWithGoogle = async () => {
       // Also clear stored tokens
       await AsyncStorage.removeItem('googleAuth');
       await AsyncStorage.removeItem('googleCredentials');
+      console.log('Cleared previous sessions');
     } catch (signOutError) {
       console.log('Error during pre-sign-in sign-out:', signOutError);
       // Continue anyway - this is just to ensure fresh login
@@ -264,62 +312,105 @@ export const signInWithGoogle = async () => {
     
     // Now attempt sign-in with account selection
     console.log('Attempting to sign in with account selector...');
-    const userInfo = await GoogleSignin.signIn({
-      forceCodeForRefreshToken: true,
-      prompt: 'select_account'
-    });
+    const userInfo = await GoogleSignin.signIn();
     
-    console.log('Sign-in successful, user info:', JSON.stringify(userInfo));
+    console.log('Google Sign-In successful!');
     
     // Extract the ID token and user data
-    // Note: In native Android, the structure is userInfo.user
-    // In Expo development builds, it might be userInfo.data.user
-    
     let idToken = null;
     let userData = null;
     
-    if (userInfo.data) {
-      // Expo dev build structure
-      idToken = userInfo.data.idToken;
-      userData = userInfo.data.user;
-    } else {
-      // Native structure
+    // Print the structure for debugging
+    console.log('GoogleSignin response structure:', 
+      JSON.stringify(Object.keys(userInfo || {})));
+    
+    // Handle different response structures
+    if (userInfo.user) {
+      // Standard structure
       idToken = userInfo.idToken;
-      userData = userInfo.user;
+      userData = {
+        id: userInfo.user.id,
+        name: userInfo.user.name || userInfo.user.displayName,
+        email: userInfo.user.email,
+        photo: userInfo.user.photo || userInfo.user.photoURL,
+      };
+      console.log('Extracted user data from standard structure');
+    } else if (userInfo.data && userInfo.data.user) {
+      // Alternative structure sometimes seen in Expo
+      idToken = userInfo.data.idToken;
+      userData = {
+        id: userInfo.data.user.id,
+        name: userInfo.data.user.name || userInfo.data.user.displayName,
+        email: userInfo.data.user.email,
+        photo: userInfo.data.user.photo || userInfo.data.user.photoURL,
+      };
+      console.log('Extracted user data from Expo alternative structure');
+    } else {
+      // Try to extract data from any structure
+      console.log('Unknown structure, attempting to extract data');
+      idToken = userInfo.idToken || userInfo.data?.idToken || null;
+      
+      // Try to build userData from whatever we can find
+      const extractedData = userInfo.user || userInfo.data?.user || userInfo;
+      userData = {
+        id: extractedData.id || extractedData.userId || extractedData.googleId || Date.now().toString(),
+        name: extractedData.name || extractedData.displayName || 'Google User',
+        email: extractedData.email || 'unknown@example.com',
+        photo: extractedData.photo || extractedData.photoURL || extractedData.avatar?.url || null,
+      };
+      
+      console.log('Attempted to extract data from unknown structure:', userData.email);
     }
     
-    if (!userData || !idToken) {
+    if (!userData || !userData.email) {
       throw new Error('Failed to extract user data from Google Sign-In response');
     }
     
-    console.log('Extracted user data:', JSON.stringify(userData));
+    console.log('Successfully extracted user data for:', userData.email);
     
-    // Store the raw Google user data in AsyncStorage as a fallback
+    // Store the data for backup
     try {
-      await AsyncStorage.setItem('googleRawUserData', JSON.stringify(userData));
-      console.log('Stored raw Google user data for backup');
+      if (userData && typeof userData === 'object') {
+        // Ensure we're not storing null or undefined
+        const safeUserData = {
+          id: userData.id || 'unknown',
+          name: userData.name || 'Google User',
+          email: userData.email || 'unknown@example.com',
+          photo: userData.photo || ''
+        };
+        await AsyncStorage.setItem('googleRawUserData', JSON.stringify(safeUserData));
+        console.log('Stored raw Google user data in AsyncStorage');
+      } else {
+        console.warn('Skipping AsyncStorage for invalid userData', typeof userData);
+      }
     } catch (storageError) {
       console.warn('Failed to store Google user data:', storageError);
     }
     
     // Import the action dynamically to avoid circular dependencies
-    const { googleLogin } = require('../redux/actions/userAction');
-    
-    // Use the googleLogin action
-    console.log('Dispatching to Redux...');
     try {
-      const result = await store.dispatch(googleLogin(idToken, userData));
-      console.log('Google login dispatch result:', result);
+      const { googleLogin } = require('../redux/actions/userAction');
+      console.log('Importing googleLogin action...');
+      
+      if (typeof googleLogin !== 'function') {
+        console.error('googleLogin is not a function:', googleLogin);
+        throw new Error('Google login action not available');
+      }
+      
+      console.log('Dispatching googleLogin action to Redux...');
+      await store.dispatch(googleLogin(idToken, userData));
+      console.log('Google login dispatch successful');
+      
       return { success: true };
     } catch (dispatchError) {
       console.error('Error dispatching Google login:', dispatchError);
       
-      // Create fallback user if backend call fails
+      // Create fallback user
       const fallbackUser = {
-        _id: userData.id || 'google-' + Date.now(),
-        name: userData.name || 'Google User',
-        email: userData.email || '',
-        avatar: { url: userData.photo || '' },
+        _id: userData?.id ? `google-${userData.id}` : `google-${Date.now()}`,
+        name: userData?.name || 'Google User',
+        email: userData?.email || 'unknown@example.com',
+        avatar: { url: userData?.photo || '' },
         role: 'user'
       };
       
@@ -327,6 +418,14 @@ export const signInWithGoogle = async () => {
       try {
         await AsyncStorage.setItem('googleUserData', JSON.stringify(fallbackUser));
         console.log('Stored fallback user data for persistence');
+        
+        // Create mock token
+        const tokenData = {
+          mockToken: `google_mock_${Date.now()}`,
+          email: fallbackUser.email,
+          timestamp: Date.now()
+        };
+        await AsyncStorage.setItem('googleCredentials', JSON.stringify(tokenData));
       } catch (storageError) {
         console.warn('Failed to store fallback user data:', storageError);
       }
@@ -391,30 +490,95 @@ export const tryRestoreGoogleSession = async () => {
   try {
     // Check for stored credentials first
     const storedCredentials = await AsyncStorage.getItem('googleCredentials');
-    if (!storedCredentials) return null;
+    if (!storedCredentials) {
+      console.log('No stored Google credentials found');
+      return null;
+    }
     
-    const credentials = JSON.parse(storedCredentials);
+    // Parse credentials, with fallback if parse fails
+    let credentials;
+    try {
+      credentials = JSON.parse(storedCredentials);
+    } catch (parseError) {
+      console.error('Error parsing stored credentials:', parseError);
+      // Clear invalid data
+      await AsyncStorage.removeItem('googleCredentials');
+      return null;
+    }
+    
+    // Basic validation of credentials
+    if (!credentials || typeof credentials !== 'object') {
+      console.warn('Invalid credentials format');
+      await AsyncStorage.removeItem('googleCredentials');
+      return null;
+    }
     
     // Check if credentials are still valid (15 days)
     const fifteenDaysInMs = 15 * 24 * 60 * 60 * 1000;
-    if (Date.now() - credentials.timestamp > fifteenDaysInMs) {
-      // Credentials expired, clear them
+    if (!credentials.timestamp || Date.now() - credentials.timestamp > fifteenDaysInMs) {
+      // Credentials expired or invalid, clear them
+      console.log('Credentials expired or missing timestamp');
       await AsyncStorage.removeItem('googleCredentials');
       await AsyncStorage.removeItem('googleUserData');
       await AsyncStorage.removeItem('googleRawUserData');
       return null;
     }
     
+    console.log('Valid credentials found for:', credentials.email || 'unknown');
+    
     // Credentials valid, get stored user data
     const userDataString = await AsyncStorage.getItem('googleUserData');
-    const rawUserDataString = await AsyncStorage.getItem('googleRawUserData');
+    if (!userDataString) {
+      console.warn('No user data found despite valid credentials');
+      return null;
+    }
     
-    if (!userDataString || !rawUserDataString) return null;
+    // Parse userData with error handling
+    let userData;
+    try {
+      userData = JSON.parse(userDataString);
+    } catch (parseError) {
+      console.error('Error parsing stored user data:', parseError);
+      return null;
+    }
+    
+    // Try to get raw user data, but don't fail if it's missing
+    let rawUserData = { id: 'unknown', email: 'unknown', name: 'Unknown User' };
+    try {
+      const rawUserDataString = await AsyncStorage.getItem('googleRawUserData');
+      if (rawUserDataString) {
+        rawUserData = JSON.parse(rawUserDataString);
+      } else {
+        console.log('No raw user data found, using defaults');
+        // Create and store default raw data for future use
+        if (userData && userData.email) {
+          rawUserData = {
+            id: userData._id || 'unknown',
+            name: userData.name || 'Unknown User',
+            email: userData.email || 'unknown@example.com',
+            photo: userData.avatar?.url || ''
+          };
+          await AsyncStorage.setItem('googleRawUserData', JSON.stringify(rawUserData));
+          console.log('Created and stored default raw user data');
+        }
+      }
+    } catch (rawDataError) {
+      console.warn('Error handling raw user data:', rawDataError);
+      // Continue with default raw data
+    }
+    
+    // Make sure the token is set properly
+    const token = credentials.token || credentials.mockToken || null;
+    if (!token) {
+      console.warn('No token found in credentials');
+    }
+    
+    console.log('Session restored successfully for:', rawUserData.email || userData.email || 'unknown');
     
     return {
-      userData: JSON.parse(userDataString),
-      rawUserData: JSON.parse(rawUserDataString),
-      token: credentials.token
+      userData: userData,
+      rawUserData: rawUserData,
+      token: token
     };
   } catch (error) {
     console.error('Error restoring Google session:', error);

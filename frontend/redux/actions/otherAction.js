@@ -9,6 +9,13 @@ export const updatePassword =
         type: "updatePasswordRequest",
       });
 
+      // Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error("Please login first");
+      }
+
       const { data } = await axios.put(
         `${server}/user/changepassword`,
         {
@@ -18,7 +25,9 @@ export const updatePassword =
         {
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           },
+          withCredentials: false
         }
       );
 
@@ -41,6 +50,13 @@ export const updateProfile =
         type: "updateProfileRequest",
       });
 
+      // Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error("Please login first");
+      }
+
       const { data } = await axios.put(
         `${server}/user/updateprofile`,
         {
@@ -54,7 +70,9 @@ export const updateProfile =
         {
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           },
+          withCredentials: false
         }
       );
 
@@ -76,10 +94,19 @@ export const updatePic = (formData) => async (dispatch) => {
       type: "updatePicRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
     const { data } = await axios.put(`${server}/user/updatepicture`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
+        "Authorization": `Bearer ${token}`
       },
+      withCredentials: false
     });
 
     dispatch({
@@ -111,6 +138,13 @@ export const placeOrder =
         type: "placeOrderRequest",
       });
 
+      // Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error("Please login first");
+      }
+
       const { data } = await axios.post(
         `${server}/order/new`,
         {
@@ -126,7 +160,9 @@ export const placeOrder =
         {
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           },
+          withCredentials: false
         }
       );
       dispatch({
@@ -147,9 +183,23 @@ export const processOrder = (id) => async (dispatch) => {
       type: "processOrderRequest",
     });
 
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
     const { data } = await axios.put(
       `${server}/order/single/${id}`,
-      {}
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        withCredentials: false
+      }
     );
     dispatch({
       type: "processOrderSuccess",
@@ -176,47 +226,23 @@ export const addCategory = (formData) => async (dispatch) => {
       throw new Error("Please login first");
     }
 
-    console.log("Creating category at:", `${server}/product/category`);
-    console.log("Token available:", !!token);
-    
-    // Check what's in the formData for debugging
-    for (let pair of formData._parts) {
-      console.log("FormData contains:", pair[0], pair[1]);
-    }
-
     const { data } = await axios.post(`${server}/product/category`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         "Authorization": `Bearer ${token}`
       },
-      withCredentials: false,
-      timeout: 15000 // Increase timeout to 15 seconds
+      withCredentials: false
     });
-
-    console.log("Category created successfully:", data.message);
 
     dispatch({
       type: "addCategorySuccess",
       payload: data.message,
     });
   } catch (error) {
-    console.error("Add category error details:", error);
-    
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      console.error("Response data:", error.response.data);
-      console.error("Response status:", error.response.status);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error("No response received from server");
-    } else {
-      // Something happened in setting up the request
-      console.error("Error message:", error.message);
-    }
-    
+    console.error("Add category error:", error);
     dispatch({
       type: "addCategoryFail",
-      payload: error.response?.data?.message || `Failed to add category: ${error.message}`,
+      payload: error.response?.data?.message || "Failed to add category",
     });
   }
 };
@@ -494,20 +520,10 @@ export const deleteProduct = (productId) => async (dispatch) => {
       type: "deleteProductRequest",
     });
 
-    // Get token from AsyncStorage
-    const token = await AsyncStorage.getItem('token');
-    
-    if (!token) {
-      throw new Error("Authentication token not found. Please login again.");
-    }
-
     const { data } = await axios.delete(
       `${server}/product/single/${productId}`,
       {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        withCredentials: false
+        withCredentials: true,
       }
     );
 
@@ -518,7 +534,7 @@ export const deleteProduct = (productId) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "deleteProductFail",
-      payload: error.response?.data?.message || "Failed to delete product",
+      payload: error.response.data.message,
     });
   }
 };
@@ -606,6 +622,36 @@ export const addReview = (formData) => async (dispatch) => {
     dispatch({
       type: "addReviewFail",
       payload: error.response.data.message,
+    });
+  }
+};
+
+export const getMyOrders = () => async (dispatch) => {
+  try {
+    dispatch({ type: "myOrdersRequest" });
+
+    // Get token from AsyncStorage
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
+    const { data } = await axios.get(`${server}/order/my`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      },
+      withCredentials: false
+    });
+
+    dispatch({ 
+      type: "myOrdersSuccess", 
+      payload: data.orders 
+    });
+  } catch (error) {
+    dispatch({ 
+      type: "myOrdersFail", 
+      payload: error.response?.data?.message || "Failed to fetch orders" 
     });
   }
 };

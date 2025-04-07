@@ -140,74 +140,31 @@ const ProductDetails = ({ route: { params } }) => {
     }
   }, [dispatch, params?.id, isFocused]);
 
-  // Log reviews when they change
-  useEffect(() => {
-    console.log(`Received ${reviews?.length || 0} reviews:`, reviews);
-  }, [reviews]);
-
   // Component to render each review item
-  const renderReviewItem = ({ item, index }) => {
-    console.log(`Rendering review ${index}:`, item);
-    return (
-      <View style={style.reviewItem}>
-        <Text style={{ fontWeight: "bold", color: "black" }}>
-          User: {item.user ? item.user : "Anonymous"}
-        </Text>
-        <Text>
-          <Text style={{ fontWeight: "bold" }}>Rating:</Text> {item.rating}/5
-        </Text>
-        <Text>
-          <Text style={{ fontWeight: "bold" }}>Comment:</Text> {item.comment}
-        </Text>
-        {user && item.user === user._id && (
-          <TouchableOpacity onPress={() => handleDeleteReview(item._id)}>
-            <Text style={style.deleteButton}>Delete Comment</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  };
-
-  // Direct rendering of reviews as an alternative to FlatList
-  const renderAllReviews = () => {
-    console.log("Rendering all reviews:", reviews);
-    
-    return reviews.map((item, index) => {
-      // Create a unique key for each review
-      const reviewKey = item._id || `review-${index}`;
-      console.log(`Rendering review ${index} with ID ${reviewKey}`);
-      
-      return (
-        <View key={reviewKey} style={style.reviewItem}>
-          <Text style={{ fontWeight: "bold", color: "black" }}>
-            User: {typeof item.user === 'object' && item.user.name 
-              ? item.user.name 
-              : (item.user ? item.user : "Anonymous")}
-          </Text>
-          <Text>
-            <Text style={{ fontWeight: "bold" }}>Rating:</Text> {item.rating}/5
-          </Text>
-          <Text style={style.reviewComment}>
-            <Text style={{ fontWeight: "bold" }}>Comment:</Text> {item.comment}
-          </Text>
-          <Text style={style.reviewDate}>
-            {new Date(item.createdAt).toLocaleString()}
-          </Text>
-          {user && (user._id === item.user || user._id === item.user?._id) && (
-            <TouchableOpacity onPress={() => handleDeleteReview(item._id)}>
-              <Text style={style.deleteButton}>Delete Comment</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      );
-    });
-  };
+  const renderReviewItem = ({ item, index }) => (
+    <View key={index} style={style.reviewItem}>
+      <Text style={{ fontWeight: "bold", color: "black" }}>
+        User: {item.user ? item.user : "Anonymous"}
+      </Text>
+      <Text>
+        <Text style={{ fontWeight: "bold" }}>Rating:</Text> {item.rating}/5
+      </Text>
+      <Text>
+        <Text style={{ fontWeight: "bold" }}>Comment:</Text> {item.comment}
+      </Text>
+      {user && item.user === user._id && (
+        <TouchableOpacity onPress={() => handleDeleteReview(item._id)}>
+          <Text style={style.deleteButton}>Delete Comment</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.color2 }}>
       <ScrollView
         style={{ ...defaultStyle, padding: 0, backgroundColor: colors.color2 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 80 }}
         showsVerticalScrollIndicator={true}
       >
         <Header back={true} />
@@ -338,13 +295,18 @@ const ProductDetails = ({ route: { params } }) => {
               <Text style={style.loadingText}>Loading reviews...</Text>
             </View>
           ) : reviews && reviews.length > 0 ? (
-            // Use direct rendering instead of FlatList
-            <View style={style.reviewsContainer}>
-              <Text style={style.reviewCountText}>
-                {reviews.length} {reviews.length === 1 ? "Review" : "Reviews"}
-              </Text>
-              {renderAllReviews()}
-            </View>
+            <FlatList
+              data={reviews}
+              renderItem={renderReviewItem}
+              keyExtractor={(item, index) => index.toString()}
+              scrollEnabled={false}
+              style={{ marginBottom: 20 }}
+              ListEmptyComponent={
+                <View style={style.emptyContainer}>
+                  <Text style={style.emptyText}>No reviews yet</Text>
+                </View>
+              }
+            />
           ) : (
             <View style={style.emptyContainer}>
               <Text style={style.emptyText}>No reviews yet</Text>
@@ -394,15 +356,13 @@ const style = StyleSheet.create({
   reviewItem: {
     marginBottom: 20,
     padding: 15,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#f9f9f9",
     borderRadius: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "#eaeaea",
+    shadowRadius: 2,
+    elevation: 2,
   },
   deleteButton: {
     color: "red",
@@ -438,28 +398,7 @@ const style = StyleSheet.create({
   emptySubtext: {
     marginTop: 5,
     color: "gray",
-  },
-  reviewCountText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: colors.color3,
-  },
-  reviewComment: {
-    marginTop: 5,
-  },
-  reviewDate: {
-    marginTop: 5,
-    color: "gray",
-  },
-  reviewsContainer: {
-    marginBottom: 30,
-    padding: 10,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
+  }
 });
 
 export default ProductDetails;

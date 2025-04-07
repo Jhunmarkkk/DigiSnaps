@@ -16,7 +16,7 @@ function getLocalIpAddress() {
     });
   });
   
-  return ipAddress || '192.168.246.228'; // fallback to default
+  return ipAddress || '192.168.176.228'; // fallback to default
 }
 
 async function updateServerIp(newIp, port = '5001') {

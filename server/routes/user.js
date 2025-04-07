@@ -7,9 +7,9 @@ const router = express.Router();
 
 router.post("/login", login);
 
-router.post("/google-login", googleLogin);
-
 router.post("/register",singleUpload, register);
+
+router.post("/google-login", googleLogin);
 
 router.get("/me", isAuthenticated, getMyProfile);
 

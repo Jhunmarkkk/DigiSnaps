@@ -24,38 +24,56 @@ const MainNavigator = () => {
         const forceNewLogin = await AsyncStorage.getItem('forceNewGoogleLogin');
         if (forceNewLogin === 'true') {
           console.log("Force new login flag detected, clearing previous sessions");
-          await AsyncStorage.removeItem('googleAuth');
-          await AsyncStorage.removeItem('googleCredentials');
-          await AsyncStorage.removeItem('googleUserData');
-          await AsyncStorage.removeItem('googleRawUserData');
-          await AsyncStorage.removeItem('forceNewGoogleLogin');
+          try {
+            await AsyncStorage.removeItem('googleAuth');
+            await AsyncStorage.removeItem('googleCredentials');
+            await AsyncStorage.removeItem('googleUserData');
+            await AsyncStorage.removeItem('googleRawUserData');
+            await AsyncStorage.removeItem('forceNewGoogleLogin');
+            await AsyncStorage.removeItem('token');
+          } catch (clearError) {
+            console.error("Error clearing session data:", clearError);
+          }
           
           setLoading(false);
           return;
         }
         
         // First try to restore Google session
-        const googleSession = await tryRestoreGoogleSession();
-        
-        if (googleSession) {
-          console.log("Restored Google session for:", googleSession.rawUserData.email);
+        try {
+          const googleSession = await tryRestoreGoogleSession();
           
-          // If we have a token, set it in AsyncStorage
-          if (googleSession.token) {
-            await AsyncStorage.setItem('token', googleSession.token);
-            console.log("Token restored from Google session");
+          if (googleSession && googleSession.userData) {
+            console.log("Restored Google session for:", googleSession.rawUserData?.email || 'unknown user');
+            
+            // If we have a token, set it in AsyncStorage
+            if (googleSession.token) {
+              await AsyncStorage.setItem('token', googleSession.token);
+              console.log("Token restored from Google session");
+            }
+            
+            // Dispatch the action to tell Redux about the user
+            dispatch({
+              type: "loadUserSuccess",
+              payload: googleSession.userData
+            });
+            console.log("User authenticated via Google session");
+            setLoading(false);
+            return;
+          } else {
+            console.log("No valid Google session found, trying regular token");
           }
+        } catch (googleError) {
+          console.error("Error restoring Google session:", googleError);
+          // Continue to regular token authentication
+        }
           
-          // Dispatch the action to tell Redux about the user
-          dispatch({
-            type: "loadUserSuccess",
-            payload: googleSession.userData
-          });
-          console.log("User authenticated via Google session");
-        } else {
-          console.log("No Google session found, trying regular token");
-          // If Google session wasn't restored, attempt normal token restoration
+        // If Google session wasn't restored, attempt normal token restoration
+        try {
           await dispatch(loadUser());
+        } catch (tokenError) {
+          console.error("Error loading user with token:", tokenError);
+          // Allow failure - user will see login screen
         }
       } catch (error) {
         console.error("Session restoration error:", error.message);

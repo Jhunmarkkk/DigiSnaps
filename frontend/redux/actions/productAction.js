@@ -14,20 +14,9 @@ export const getAllProducts = (keyword, category) => async (dispatch) => {
 
     console.log("Fetching products from:", url);
     
-    // Get authentication token for consistent behavior with admin endpoints
-    const token = await AsyncStorage.getItem('token');
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    
-    const { data } = await axios.get(url, { headers });
+    const { data } = await axios.get(url);
 
     console.log(`Fetched ${data.products.length} products`);
-    
-    // Log the products for debugging
-    if (data.products.length === 0) {
-      console.log("No products found in the response");
-    } else {
-      console.log("Product names:", data.products.map(p => p.name));
-    }
     
     dispatch({
       type: "getAllProductsSuccess",

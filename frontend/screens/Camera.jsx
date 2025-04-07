@@ -24,39 +24,26 @@ const CameraComponent = ({ navigation, route }) => {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 1,
       });
       
-      if (data.canceled || !data.assets || data.assets.length === 0) {
-        console.log("Image selection canceled or no assets selected");
-        return;
-      }
+      if (data.canceled || !data.assets || data.assets.length === 0) return;
 
       const imageUri = data.assets[0].uri;
-      console.log("Image selected:", imageUri);
       
-      if (route.params?.newProduct) {
-        console.log("Navigating to newproduct with image");
+      if (route.params?.newProduct)
         return navigation.navigate("newproduct", { image: imageUri });
-      }
-      if (route.params?.updateProduct) {
-        console.log("Navigating to productimages with image");
+      if (route.params?.updateProduct)
         return navigation.navigate("productimages", { image: imageUri });
-      }
-      if (route.params?.updateProfile) {
-        console.log("Navigating to profile with image");
+      if (route.params?.updateProfile)
         return navigation.navigate("profile", { image: imageUri });
-      }
-      if (route.params?.newCategory) {
-        console.log("Navigating to categories with image");
+      if (route.params?.newCategory)
         return navigation.navigate("categories", { image: imageUri });
-      }
       
-      console.log("Navigating to signup with image");
       return navigation.navigate("signup", { image: imageUri });
     } catch (error) {
       console.log("Error in image picker:", error);
-      alert("Failed to pick image: " + error.message);
+      alert("Failed to pick image");
     }
   };
 

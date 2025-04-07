@@ -28,11 +28,10 @@ const Login = ({ navigation }) => {
   const dispatch = useDispatch();
   const { error, message, isAuthenticated, user } = useSelector((state) => state.user);
 
-  // Initialize Google Sign-In when component mounts only if not in Expo Go
+  // Initialize Google Sign-In when component mounts
   useEffect(() => {
-    if (!isExpoGo) {
-      configureGoogleSignIn();
-    }
+    configureGoogleSignIn();
+    console.log('Google Sign-In configured, in Expo Go mode:', isExpoGo);
   }, []);
 
   const submitHandler = async () => {
@@ -60,14 +59,26 @@ const Login = ({ navigation }) => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      console.log('Starting Google Sign-In...');
+      console.log('Starting Google Sign-In from Login screen...');
+      
+      if (isExpoGo) {
+        console.log('Using Expo Go mock flow');
+        alert('In Expo Go, you will be signed in with test data.');
+      }
+      
       const result = await signInWithGoogle();
-      console.log('Google Sign-In result:', result);
+      console.log('Google Sign-In result:', JSON.stringify(result));
       
       if (!result.success) {
         const errorMsg = result.error?.message || 'Unknown error';
         console.error(`Google Sign-In failed: ${errorMsg}`, result.error);
         alert(`Google Sign-In failed: ${errorMsg}`);
+      } else if (result.mock) {
+        console.log('Mock Google Sign-In successful');
+        alert('Signed in with test account in Expo Go mode');
+      } else if (result.fallback) {
+        console.log('Fallback Google Sign-In successful');
+        alert('Signed in with local fallback (offline mode)');
       } else {
         console.log('Google Sign-In successful');
       }
@@ -159,9 +170,9 @@ const Login = ({ navigation }) => {
             contentStyle={googleStyles.googleButton}
             style={googleStyles.googleButtonContainer}
             onPress={handleGoogleSignIn}
-            disabled={googleLoading || isExpoGo}
+            disabled={googleLoading}
           >
-            {isExpoGo ? "Google Sign-In (Unavailable in Expo Go)" : "Sign in with Google"}
+            {isExpoGo ? "Sign in with Google (Test Mode)" : "Sign in with Google"}
           </Button>
         </View>
       </ScrollView>

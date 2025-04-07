@@ -3,7 +3,6 @@ import {User} from "../models/user.js"
 import ErrorHandler from "../utils/error.js";
 import { cookieOptions, getDataUri, sendEmail, sendToken } from "../utils/features.js";
 import cloudinary from "cloudinary";
-import fetch from "node-fetch";
 
 export const login = asyncError(async  (req,res,next) => {
     const { email, password } = req.body;
@@ -212,101 +211,64 @@ export const resetPassword = asyncError(async (req,res,next)=>{
 
 export const googleLogin = asyncError(async (req, res, next) => {
   try {
-    const { idToken, userInfo, firebaseToken, firebaseUid } = req.body;
+    // Log the complete request body for debugging
+    console.log("Google login request received with body:", JSON.stringify(req.body));
     
-    // Check if userInfo is properly received
-    if (!userInfo || !userInfo.email) {
-      console.error("Invalid user data received:", req.body);
-      return next(new ErrorHandler("Invalid user data received from Google", 400));
+    // Extract fields from request with fallbacks for everything
+    const email = req.body.email;
+    const name = req.body.name || (email ? email.split('@')[0] : 'Google User');
+    const googleId = req.body.googleId || req.body.id || `google_${Date.now()}`;
+    const avatarUrl = req.body.avatar || req.body.photo || '';
+    
+    console.log(`Processing Google login for: ${email}, name: ${name}, ID: ${googleId}`);
+    
+    // Validate email at minimum
+    if (!email) {
+      console.log("Google login failed: No email provided");
+      return next(new ErrorHandler("Email is required for Google login", 400));
     }
     
-    console.log("Google login attempt with:", userInfo.email);
-    if (firebaseUid) {
-      console.log("Firebase UID provided:", firebaseUid);
-    }
-    
-    // For production, you should verify the ID token
-    // For now, we'll trust the token and use the userInfo directly
-    const googleId = userInfo.id;
-    
-    // Check if user exists by email, googleId, or firebaseUid
-    let user = await User.findOne({ 
-      $or: [
-        { email: userInfo.email },
-        { googleId: googleId },
-        ...(firebaseUid ? [{ firebaseUid }] : [])
-      ]
-    });
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    console.log("User exists in database:", !!user);
     
     if (user) {
-      console.log("Existing user found:", user.email);
-      
-      // Update the googleId if it's not set yet
-      if (!user.googleId && googleId) {
+      // User exists, update Google ID if not already set
+      if (googleId && !user.googleId) {
+        console.log(`Updating existing user with Google ID: ${googleId}`);
         user.googleId = googleId;
-        console.log("Updated googleId for user");
-      }
-      
-      // Update the firebaseUid if it's not set yet
-      if (!user.firebaseUid && firebaseUid) {
-        user.firebaseUid = firebaseUid;
-        console.log("Updated firebaseUid for user");
-      }
-      
-      // Update the user's avatar if it has changed (optional)
-      if (userInfo.photo && (!user.avatar || user.avatar.url !== userInfo.photo)) {
-        console.log("Updating user avatar");
-        user.avatar = {
-          public_id: `google_${googleId || Date.now()}`,
-          url: userInfo.photo
-        };
-      }
-      
-      // Save user if changes were made
-      if ((!user.googleId && googleId) || 
-          (!user.firebaseUid && firebaseUid) || 
-          (userInfo.photo && (!user.avatar || user.avatar.url !== userInfo.photo))) {
         await user.save();
-        console.log("User updated successfully");
+      }
+    } else {
+      // For new users, we need to create with default values for required fields
+      console.log(`Creating new user for: ${email}`);
+      const newUser = {
+        name: name,
+        email: email,
+        googleId: googleId,
+        password: Math.random().toString(36).slice(-8) + Date.now().toString(36),
+        // Default values for required fields
+        address: "Default Address",
+        city: "Default City",
+        country: "Default Country",
+        pinCode: 123456
+      };
+      
+      // Add avatar if provided
+      if (avatarUrl) {
+        newUser.avatar = { url: avatarUrl };
       }
       
-      // User exists, login
-      sendToken(user, res, `Welcome back, ${user.name}`, 200);
-    } else {
-      console.log("Creating new user from Google account:", userInfo.email);
-      try {
-        // Create new user
-        const avatar = userInfo.photo ? {
-          public_id: `google_${googleId || Date.now()}`,
-          url: userInfo.photo
-        } : undefined;
-        
-        // Generate a random password since we don't need it for Google auth
-        const randomPassword = Math.random().toString(36).slice(-8);
-        
-        user = await User.create({
-          name: userInfo.name || "Google User",
-          email: userInfo.email,
-          password: randomPassword,
-          googleId: googleId,
-          firebaseUid: firebaseUid || null,
-          avatar,
-          address: "Update your address",
-          city: "Update your city",
-          country: "Update your country",
-          pinCode: 0,
-        });
-        
-        console.log("New user created:", user._id);
-        
-        sendToken(user, res, `Welcome to DigiSnaps, ${user.name}`, 201);
-      } catch (createError) {
-        console.error("Error creating user:", createError);
-        return next(new ErrorHandler(`Failed to create user: ${createError.message}`, 500));
-      }
+      console.log("Creating user with data:", JSON.stringify(newUser));
+      user = await User.create(newUser);
+      console.log(`New user created with ID: ${user._id}`);
     }
+    
+    // Send token response
+    console.log(`Sending token for user: ${user.email}`);
+    sendToken(user, res, `Welcome, ${user.name}`, 200);
   } catch (error) {
     console.error("Google login error:", error);
-    return next(new ErrorHandler(`Google authentication failed: ${error.message}`, 400));
+    return next(new ErrorHandler("Google login failed: " + (error.message || "Unknown error"), 500));
   }
 });
